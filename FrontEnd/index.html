@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="icon" href="logoCAF.png" type="image/png">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Login Container -->
+    <div class="login-container" id="loginContainer">
+        <h2><i class="fas fa-lock"></i> Admin Login</h2>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard" id="dashboardContainer" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="logoCAF.png" alt="CAF Logo" style="height: 50px;">
+            </div>
+            <button class="sidebar-toggle-btn" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="menu">
+                <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
+                <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-btn">
+                      <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
+                      <i class="fas fa-caret-down dropdown-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                      <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Présence des employés</a></li>
+                      <li><a href="empAtt.html"><i class="fas fa-user-clock"></i> Présence par employé</a></li>
+                      <li><a href="prsheet.html" class="active"><i class="fas fa-calendar-alt"></i> Feuille de Présence</a></li>
+                    </ul>
+                </li>
+                <li><a href="parameter.html"><i class="fas fa-cog"></i> <span class="menu-text">Settings</span></a></li>
+            </ul>
+            <button id="logoutBtn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="menu-text">Logout</span>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left"></div> 
+              
+                <div class="header-right">
+                    <button id="themeToggle" title="Toggle dark/light mode">🌙</button>
+
+                  <div class="user-profile">
+                    <img src="1.jpg" alt="Admin" />
+                    <div class="user-info">
+                      <span class="user-name">AMR </span>
+                      <span class="user-role">ADMIN</span>
+                    </div>
+              
+                    <!-- Formulaire au survol -->
+                    <div class="user-popup">
+                      <p><strong>Nom :</strong> AMR</p>
+                      <p><strong>Statut :</strong> ADMIN</p>
+                    </div>
+                  </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="content">
+                <!-- Cards -->
+                <div class="cards" id="employeesTableBody">
+                    <!-- <div class="card">
+                        <h3>Total Users</h3>
+                        <p id="totalUsers">1</p>
+                    </div>
+                    <div class="card">
+                        <h3>Total des Employés</h3>
+                        <p>350</p>
+                    </div>
+                    <div class="card">
+                        <h3>total number of work absences</h3>
+                        <p>51</p>
+                    </div> -->
+                </div>
+            
+                <!-- Nouvelle section avec deux colonnes -->
+                <div class="dashboard-grid">
+                    <!-- Colonne gauche - Cartes analytiques -->
+                    <div class="analytics-column">
+                        <div class="card analytics-card">
+                            <i class="fas fa-users"></i>
+                            <div>
+                                <h3>Employés Actifs</h3>
+                                <p id="activeEmployees"></p>
+                                <span class="card-trend up">+12%</span>
+                            </div>
+                        </div>
+                        <div class="card analytics-card">
+                            <i class="fas fa-user-clock"></i>
+                            <div>
+                                <h3>Présences Aujourd'hui</h3>
+                                <p id="todayAttendance"></p>
+                                <span class="card-trend down">-5%</span>
+                            </div>
+                        </div>
+                        <div class="card analytics-card">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>
+                                <h3>Absences</h3>
+                                <p id="absentCount">51</p>
+                                <span class="card-trend">10%</span>
+                            </div>
+                        </div>
+                    </div>
+            
+                    <!-- Colonne droite - Tableau des entrées -->
+                    <div class="table-column">
+                        <div class="card entries-table">
+                            <h3><i class="fas fa-door-open"></i> Entrées récentes</h3>
+                            <div class="table-responsive">
+                                <table id="recentEntriesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Employé</th>
+                                            <th>Heure</th>
+                                            <th>Portail</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Rempli dynamiquement par JavaScript -->
+                                        <tr>
+                                            <td>
+                                                <div class="employee-cell">
+                                                    <img src="1.jpg" alt="Amr Elbellaoui" class="employee-photo">
+                                                    <span>Amr ELBALLAOUI</span>
+                                                </div>
+                                            </td>
+                                            <td>08:12</td>
+                                            <td>Principal</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="employee-cell">
+                                                    <img src="5.png" alt="mouad" class="employee-photo">
+                                                    <span>mouad</span>
+                                                </div>
+                                            </td>
+                                            <td>08:05</td>
+                                            <td>Secondaire</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="employee-cell">
+                                                    <img src="3.png" alt="ahmed" class="employee-photo">
+                                                    <span>ahmed</span>
+                                                </div>
+                                            </td>
+                                            <td>07:58</td>
+                                            <td>Principal</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="employee-cell">
+                                                    <img src="4.png" alt="elon musk" class="employee-photo">
+                                                    <span>elon musk</span>
+                                                </div>
+                                            </td>
+                                            <td>07:44</td>
+                                            <td>Principal</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="employee-cell">
+                                                    <img src="bent.jpg" alt="marouan" class="employee-photo">
+                                                    <span>marouan</span>
+                                                </div>
+                                            </td>
+                                            <td>08:15</td>
+                                            <td>3 éme Gate</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Graphique des entrées par heure -->
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-bar"></i> Entrées par heure aujourd'hui</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="entriesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Nouveaux graphiques -->
+                <div class="dashboard-grid mt-6">
+                    <!-- Graphique de répartition des emplois par genre -->
+                    <div class="chart-column">
+                        <div class="chart-container">
+                            <h3><i class="fas fa-venus-mars"></i> Répartition des emplois par genre</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="genderDistributionChart"></canvas>
+                            </div>
+                            <!-- Ajout de statistiques détaillées sous le graphique -->
+                            <div class="gender-stats-container mt-4">
+                                <h4 class="gender-stats-title"><i class="fas fa-chart-pie"></i> Statistiques détaillées</h4>
+                                <div class="gender-stats-grid">
+                                    <div class="gender-stat-item">
+                                        <div class="stat-label">
+                                            <span class="color-dot" style="background-color: #FF6384;"></span>
+                                            <span>Femmes - Administration</span>
+                                        </div>
+                                        <div class="stat-value">120 (24%)</div>
+                                    </div>
+                                    <div class="gender-stat-item">
+                                        <div class="stat-label">
+                                            <span class="color-dot" style="background-color: #36A2EB;"></span>
+                                            <span>Hommes - Administration</span>
+                                        </div>
+                                        <div class="stat-value">80 (16%)</div>
+                                    </div>
+                                    <div class="gender-stat-item">
+                                        <div class="stat-label">
+                                            <span class="color-dot" style="background-color: #FF9F9F;"></span>
+                                            <span>Femmes - Technique</span>
+                                        </div>
+                                        <div class="stat-value">60 (12%)</div>
+                                    </div>
+                                    <div class="gender-stat-item">
+                                        <div class="stat-label">
+                                            <span class="color-dot" style="background-color: #4BC0C0;"></span>
+                                            <span>Hommes - Technique</span>
+                                        </div>
+                                        <div class="stat-value">140 (28%)</div>
+                                    </div>
+                                    <div class="gender-stat-item">
+                                        <div class="stat-label">
+                                            <span class="color-dot" style="background-color: #FF99CC;"></span>
+                                            <span>Femmes - Management</span>
+                                        </div>
+                                        <div class="stat-value">40 (8%)</div>
+                                    </div>
+                                    <div class="gender-stat-item">
+                                        <div class="stat-label">
+                                            <span class="color-dot" style="background-color: #9AD0F5;"></span>
+                                            <span>Hommes - Management</span>
+                                        </div>
+                                        <div class="stat-value">60 (12%)</div>
+                                    </div>
+                                </div>
+                                <div class="gender-summary">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total Femmes:</span>
+                                        <span class="summary-value">220 (44%)</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total Hommes:</span>
+                                        <span class="summary-value">280 (56%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Graphique de rapport de présence -->
+                    <div class="chart-column">
+                        <div class="chart-container">
+                            <h3><i class="fas fa-user-check"></i> Rapport de présence des employés</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="attendanceReportChart"></canvas>
+                            </div>
+                            <div class="mt-4 p-3">
+                                <h4 class="font-medium text-sm">Commentaires:</h4>
+                                <ul id="attendanceComments" class="mt-2 space-y-1 text-sm"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Activité récente (déplacée en dernier) -->
+                <div class="activity-feed">
+                    <h3><i class="fas fa-bell"></i> Activité Récente</h3>
+                    <ul id="recentActivity">
+                        <li>
+                            <i class="fas fa-user-check activity-icon"></i>
+                            <span>Ahmed Benali a pointé à 08:12</span>
+                            <span class="activity-time">10 min</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-user-times activity-icon"></i>
+                            <span>Fatima Zahra absente aujourd'hui</span>
+                            <span class="activity-time">1h</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-edit activity-icon"></i>
+                            <span>Modification du profil de Karim</span>
+                            <span class="activity-time">2h</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+    <script src="parametre.js"></script> 
+    <script src="attendance.js"></script> 
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Présences - Admin Dashboard</title>
+    <link rel="icon" href="logoCAF.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="attendance.css">
+    <style>
+        /* Corriger le z-index */
+        .sidebar {
+            z-index: 1000;
+        }
+        
+        .main-content {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dashboard Container -->
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="logoCAF.png" alt="CAF Logo" style="height: 50px;">
+            </div>
+            <button class="sidebar-toggle-btn" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="menu">
+                <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
+                <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-btn">
+                      <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
+                      <i class="fas fa-caret-down dropdown-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                      <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Présence des employés</a></li>
+                      <li><a href="empAtt.html"><i class="fas fa-user-clock"></i> Présence par employé</a></li>
+                      <li><a href="prsheet.html" class="active"><i class="fas fa-calendar-alt"></i> Feuille de Présence</a></li>
+                    </ul>
+                </li>
+                <li><a href="parameter.html"><i class="fas fa-cog"></i> <span class="menu-text">Settings</span></a></li>
+            </ul>
+            <button id="logoutBtn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="menu-text">Logout</span>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <div class="header">
+                <div class="header-left"></div>
+                <div class="header-right">
+                    <button id="themeToggle" title="Toggle dark/light mode">🌙</button>
+                    <div class="user-profile">
+                        <img src="1.jpg" alt="Admin" />
+                        <div class="user-info">
+                            <span class="user-name">AMR</span>
+                            <span class="user-role">ADMIN</span>
+                        </div>
+                        <div class="user-popup">
+                            <p><strong>Nom :</strong> AMR</p>
+                            <p><strong>Statut :</strong> ADMIN</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenu spécifique à la présence -->
+            <div class="content attendance-content">
+                <h1><i class="fas fa-user-clock"></i> Présence des employés - <span id="currentDate">Aujourd'hui</span></h1>
+                
+                <!-- Barre d'action -->
+            <div class="action-bar">
+                    <div class="search-container">
+                        <input type="text" id="searchInput" placeholder="Rechercher un employé..." />
+                        <button class="search-btn"><i class="fas fa-search"></i></button>
+                    </div>
+                <div class="filter-container">
+                    <select id="statusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="PRESENT">Présent</option>
+                        <option value="ABSENT">Absent</option>
+                        <option value="EN_PAUSE">En pause</option>
+                        <option value="TERMINE">Terminé</option>
+                    </select>
+                    <select id="shiftFilter">
+                        <option value="">Tous les shifts</option>
+                        <option value="Matin">Matin</option>
+                        <option value="Après-midi">Après-midi</option>
+                            <option value="Soir">Soir</option>
+                    </select>
+                </div>
+            <div class="action-buttons">
+                <button id="addAttendanceBtn" class="add-btn">
+                <i class="fas fa-user-plus"></i>
+                </button>
+                <button id="exportBtn" class="export-btn">
+                <i class="fas fa-file-export"></i> Exporter
+                </button>
+                <!-- <button id="checkGateBtn" class="check-gate-btn">
+                <i class="fas fa-door-open"></i> Checking Gate
+                </button> -->
+            </div>
+            </div>
+                
+                <!-- Tableau des présences -->
+                <div class="table-container">
+                    <table id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <!-- <th class="checkbox-cell">
+                                    <input type="checkbox" id="selectAll" title="Sélectionner tout">
+                                </th> -->
+                                <th>Employé</th>
+                                <th>First In </th>
+                                <th>Break </th>
+                                <th>Last Out </th>
+                                <th>Total Heures</th>
+                                <th>Status</th>
+                                <th>Shift</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <!-- Employee rows will be added here by JavaScript -->
+                        </tbody>
+                    </table>
+                    <div class="pagination-container" >
+                        <div class="pagination-info">
+                            <span id="pageInfo">Page 1 sur 1</span>
+                            <div class="items-per-page">
+                                <label for="itemsPerPageSelect">Éléments par page:</label>
+                                <select id="itemsPerPageSelect">
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="pagination-controls">
+                            <button id="prevPage" class="pagination-btn" disabled>
+                                <i class="fas fa-chevron-left"></i> Précédent
+                            </button>
+                            <button id="nextPage" class="pagination-btn">
+                                Suivant <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions groupées -->
+                <div class="bulk-actions" id="bulkActions">
+                    <span class="selected-count">0 sélectionné(s)</span>
+                    <button class="bulk-action-btn" id="markPresentBtn">
+                        <i class="fas fa-check-circle"></i> Marquer présent
+                    </button>
+                    <button class="bulk-action-btn" id="markAbsentBtn">
+                        <i class="fas fa-times-circle"></i> Marquer absent
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modification Présence -->
+    <div id="attendanceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Modifier la présence</h2>
+                <button class="close-btn" id="closeModal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="attendanceForm">
+                <input type="hidden" id="attendanceId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="employeeName">Employé</label>
+                        <input type="text" id="employeeName" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="shift">Shift</label>
+                        <select id="shift" name="shift">
+                            <option value="Matin">Matin</option>
+                            <option value="Après-midi">Après-midi</option>
+                            <option value="Soir">Soir</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstIn">First In</label>
+                        <input type="time" id="firstIn" name="firstIn">
+                    </div>
+                    <div class="form-group">
+                        <label for="breakTime">Break</label>
+                        <input type="time" id="breakTime" name="breakTime">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lastOut">Last Out</label>
+                        <input type="time" id="lastOut" name="lastOut">
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="PRESENT">Présent</option>
+                        <option value="ABSENT">Absent</option>
+                        <option value="EN_PAUSE">En pause</option>
+                        <option value="TERMINE">Terminé</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancelBtn" class="cancel-btn">Annuler</button>
+                    <button type="submit" id="saveBtn" class="save-btn">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Confirmation Suppression -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content delete-modal">
+            <div class="modal-header">
+                <h2>Confirmer la suppression</h2>
+                <button class="close-btn" id="closeDeleteModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer cet enregistrement de présence ? Cette action est irréversible.</p>
+                <div class="employee-info" id="deleteAttendanceInfo">
+                    <!-- Les informations de présence seront ajoutées ici par JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelDeleteBtn" class="cancel-btn">Annuler</button>
+                <button id="confirmDeleteBtn" class="delete-btn">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    <script src="attendance.js"></script>
+    <script>
+        // Ajouter en fin de body avant </html>
+        document.addEventListener('DOMContentLoaded', () => {
+          if (typeof Dashboard !== 'undefined') {
+            Dashboard.init();
+          }
+        });
+      </script>
+</body>
+</html>

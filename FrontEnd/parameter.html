@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres | Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="parameter.css">
+
+</head>
+<body>
+    <!-- Dashboard Container -->
+    <div class="dashboard" id="dashboardContainer">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="logoCAF.png" alt="CAF Logo" style="height: 50px;">
+            </div>
+            <button class="sidebar-toggle-btn" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="menu">
+                <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
+                <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-btn">
+                      <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
+                      <i class="fas fa-caret-down dropdown-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                      <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Présence des employés</a></li>
+                      <li><a href="empAtt.html"><i class="fas fa-user-clock"></i> Présence par employé</a></li>
+                      <li><a href="prsheet.html" class="active"><i class="fas fa-calendar-alt"></i> Feuille de Présence</a></li>
+                    </ul>
+                </li>
+                <li><a href="parameter.html"><i class="fas fa-cog"></i> <span class="menu-text">Settings</span></a></li>
+            </ul>
+            <button id="logoutBtn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="menu-text">Logout</span>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left"></div> 
+              
+                <div class="header-right"> 
+                    <button id="themeToggle" title="Toggle dark/light mode">🌙</button>
+                  <div class="user-profile">
+                    <img src="1.jpg" alt="Admin" />
+                    <div class="user-info">
+                      <span class="user-name">AMR</span>
+                      <span class="user-role">ADMIN</span>
+                    </div>
+              
+                    <!-- Formulaire au survol -->
+                    <div class="user-popup">
+                      <p><strong>Nom :</strong> AMR</p>
+                      <p><strong>Statut :</strong> ADMIN</p>
+                    </div>
+                  </div>
+                </div>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="settings-content">
+
+                <div class="settings-card">
+                    <h2><i class="fas fa-bell"></i> Notifications</h2>
+                    
+                    <div class="setting-option">
+                        <div class="option-info">
+                            <h3>Notifications par email</h3>
+                            <p>Recevoir des alertes par email</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="emailNotifications">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-option">
+                        <div class="option-info">
+                            <h3>Notifications push</h3>
+                            <p>Recevoir des notifications sur ce dispositif</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="pushNotifications">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Nouvelle section pour le changement de mot de passe -->
+                <div class="settings-card">
+                    <h2><i class="fas fa-key"></i> Changement de mot de passe</h2>
+                    
+                    <div id="passwordChangeNotification" class="notification" style="display: none;"></div>
+                    
+                    <div class="password-change-form">
+                        <div class="form-group">
+                            <label for="currentPassword">Mot de passe actuel</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="password" id="currentPassword" placeholder="Entrez votre mot de passe actuel">
+                                <button type="button" class="toggle-password" aria-label="Afficher le mot de passe">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="newPassword">Nouveau mot de passe</label>
+                            <div class="input-group">
+                                <i class="fas fa-key input-icon"></i>
+                                <input type="password" id="newPassword" placeholder="Entrez votre nouveau mot de passe">
+                                <button type="button" class="toggle-password" aria-label="Afficher le mot de passe">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirmer le mot de passe</label>
+                            <div class="input-group">
+                                <i class="fas fa-check input-icon"></i>
+                                <input type="password" id="confirmPassword" placeholder="Confirmez votre nouveau mot de passe">
+                                <button type="button" class="toggle-password" aria-label="Afficher le mot de passe">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="password-strength">
+                            <div class="strength-meter">
+                                <div class="strength-bar" id="strengthBar"></div>
+                            </div>
+                            <span id="strengthText">Force du mot de passe</span>
+                        </div>
+                        
+                        <div class="password-requirements">
+                            <p>Le mot de passe doit contenir :</p>
+                            <ul>
+                                <li id="length"><i class="fas fa-times"></i> Au moins 8 caractères</li>
+                                <li id="uppercase"><i class="fas fa-times"></i> Au moins une majuscule</li>
+                                <li id="lowercase"><i class="fas fa-times"></i> Au moins une minuscule</li>
+                                <li id="number"><i class="fas fa-times"></i> Au moins un chiffre</li>
+                            </ul>
+                        </div>
+                        
+                        <button id="changePasswordBtn" class="change-password-btn">
+                            <i class="fas fa-save"></i> Enregistrer les modifications
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="parameter.js"></script>
+    
+</body>
+</html>

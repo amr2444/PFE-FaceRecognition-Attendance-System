@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr" >
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feuille de Présence | Dashboard Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="prsheet.css">
+</head>
+<body>
+    <!-- Dashboard Container -->
+    <div class="dashboard" id="dashboardContainer">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="logoCAF.png" alt="CAF Logo" style="height: 50px;">
+            </div>
+            <button class="sidebar-toggle-btn" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="menu">
+                <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
+                <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-btn">
+                      <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
+                      <i class="fas fa-caret-down dropdown-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                      <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Présence des employés</a></li>
+                      <li><a href="empAtt.html"><i class="fas fa-user-clock"></i> Présence par employé</a></li>
+                      <li><a href="prsheet.html" class="active"><i class="fas fa-calendar-alt"></i> Feuille de Présence</a></li>
+                    </ul>
+                </li>
+                <li><a href="parameter.html"><i class="fas fa-cog"></i> <span class="menu-text">Settings</span></a></li>
+            </ul>
+            <button id="logoutBtn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="menu-text">Logout</span>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Header -->
+            <div class="header">   
+                <div class="header-right">
+                    <button id="themeToggle" title="Toggle dark/light mode">🌙</button>
+                  <div class="user-profile">
+                    <img src="1.jpg" alt="Admin" />
+                    <div class="user-info">
+                      <span class="user-name">AMR</span>
+                      <span class="user-role">ADMIN</span>
+                    </div>
+              
+                    <!-- Formulaire au survol -->
+                    <div class="user-popup">
+                      <p><strong>Nom :</strong> AMR</p>
+                      <p><strong>Statut :</strong> ADMIN</p>
+                    </div>
+                  </div>
+                </div>
+            </div>
+
+            <!-- Attendance Content -->
+            <div class="content">
+                <!-- Filter Section -->
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-calendar-alt"></i> Attendance Sheet</h1>
+                </div>
+                <div class="filter-section">
+                    <div class="filter-controls">
+                        <div class="filter-group">
+                            <label for="yearSelect">Année:</label>
+                            <select id="yearSelect" class="filter-select">
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="monthSelect">Mois:</label>
+                            <select id="monthSelect" class="filter-select">
+                                <option value="1">Janvier</option>
+                                <option value="2">Février</option>
+                                <option value="3" selected>Mars</option>
+                                <option value="4">Avril</option>
+                                <option value="5">Mai</option>
+                                <option value="6">Juin</option>
+                                <option value="7">Juillet</option>
+                                <option value="8">Août</option>
+                                <option value="9">Septembre</option>
+                                <option value="10">Octobre</option>
+                                <option value="11">Novembre</option>
+                                <option value="12">Décembre</option>
+                            </select>
+                        </div>
+                        <button id="searchBtn" class="search-btn">
+                            <i class="fas fa-search"></i> Rechercher
+                        </button>
+                    </div>
+                    
+                    <div class="filter-info-row">
+                        <div class="filter-tags" id="filterTags">
+                            Filtered by: <span class="filter-tag">Year: <strong id="yearTag">2025</strong></span> | <span class="filter-tag">Month: <strong id="monthTag">Mars</strong></span>
+                        </div>
+                        
+                        <div class="attendance-legend">
+                            <div class="legend-item">
+                                <span class="legend-color present"></span>
+                                <span class="legend-text">Présent</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color absent"></span>
+                                <span class="legend-text">Absent</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color leave"></span>
+                                <span class="legend-text">Congé</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color weekend"></span>
+                                <span class="legend-text">Weekend</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color holiday"></span>
+                                <span class="legend-text">Jour férié</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attendance Table -->
+                <div class="table-container">
+                    <table id="attendanceTable" class="attendance-table">
+                        <thead id="tableHeader">
+                            <!-- Header will be generated by JavaScript -->
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Rows will be generated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Export Options -->
+                <div class="export-options">
+                    <button class="export-btn" id="exportPdf">
+                        <i class="fas fa-file-pdf"></i> Exporter en PDF
+                    </button>
+                    <button class="export-btn" id="exportExcel">
+                        <i class="fas fa-file-excel"></i> Exporter en Excel
+                    </button>
+                    <button class="export-btn" id="printBtn">
+                        <i class="fas fa-print"></i> Imprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Chargement des données...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    <script src="prsheet.js"></script>
+</body>
+</html>

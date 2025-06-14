@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Présence par Employé | Admin Dashboard</title>
+    <link rel="icon" href="logoCAF.png" type="image/png">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="empAtt.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Corriger le z-index */
+        .sidebar {
+            z-index: 1000;
+        }
+        
+        .main-content {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Container -->
+    <div class="login-container" id="loginContainer">
+        <h2><i class="fas fa-lock"></i> Admin Login</h2>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard" id="dashboardContainer" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="logoCAF.png" alt="CAF Logo" style="height: 50px;">
+            </div>
+            <button class="sidebar-toggle-btn" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="menu">
+                <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
+                <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-btn">
+                      <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
+                      <i class="fas fa-caret-down dropdown-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                      <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Présence des employés</a></li>
+                      <li><a href="empAtt.html"><i class="fas fa-user-clock"></i> Présence par employé</a></li>
+                      <li><a href="prsheet.html" class="active"><i class="fas fa-calendar-alt"></i> Feuille de Présence</a></li>
+                    </ul>
+                </li>
+                <li><a href="parameter.html"><i class="fas fa-cog"></i> <span class="menu-text">Settings</span></a></li>
+            </ul>
+            <button id="logoutBtn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="menu-text">Logout</span>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    
+                </div>
+                <div class="header-right">
+                    <button id="themeToggle" title="Toggle dark/light mode">🌙</button>
+                    <div class="user-profile">
+                        <img src="1.jpg" alt="Admin" />
+                        <div class="user-info">
+                            <span class="user-name">AMR</span>
+                            <span class="user-role">ADMIN</span>
+                        </div>
+                        <!-- Formulaire au survol -->
+                        <div class="user-popup">
+                            <p><strong>Nom :</strong> AMR</p>
+                            <p><strong>Statut :</strong> ADMIN</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Employee Search Section -->
+                <div class="employee-search-section">
+                    <div class="search-container">
+                        <input type="text" id="employeeSearchInput" placeholder="Rechercher un employé...">
+                        <button id="searchEmployeeBtn"><i class="fas fa-search"></i> Rechercher</button>
+                    </div>
+                </div>
+
+                <!-- Employee Info Section (Hidden by default) -->
+                <div id="employeeInfoSection" class="employee-info-section hidden">
+                    <div class="employee-header">
+                        <div class="employee-photo">
+                            <img id="employeePhoto" src="https://via.placeholder.com/100" alt="">
+                        </div>
+                        <div class="employee-details">
+                            <h2 id="employeeName">Nom de l'employé</h2>
+                            <div class="employee-info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Département:</span>
+                                    <span id="employeeDepartment" class="info-value">Département</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">ID Employé:</span>
+                                    <span id="employeeId" class="info-value">EMP-001</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Date d'embauche:</span>
+                                    <span id="employeeJoiningDate" class="info-value">01/01/2022</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Stats -->
+                    <div class="employee-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Heures moyennes</h3>
+                                <p id="avgWorkingHours">8h 30m</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-sign-in-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Heure d'arrivée moyenne</h3>
+                                <p id="avgInTime">08:15</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Heure de départ moyenne</h3>
+                                <p id="avgOutTime">17:45</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-coffee"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Temps de pause moyen</h3>
+                                <p id="avgBreakTime">1h 00m</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Range Selector -->
+                    <div class="date-range-selector">
+                        <div class="date-range-title">
+                            <h3>Historique de présence</h3>
+                        </div>
+                        <div class="date-range-controls">
+                            <button id="prevWeekBtn" class="date-btn"><i class="fas fa-chevron-left"></i> Semaine précédente</button>
+                            <span id="currentWeekDisplay">10 - 16 Mai 2023</span>
+                            <button id="nextWeekBtn" class="date-btn">Semaine suivante <i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Table -->
+                    <div class="attendance-table-container">
+                        <table id="employeeAttendanceTable" class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Check In</th>
+                                    <th>Check Out</th>
+                                    <th>Heures de travail</th>
+                                    <th>Shift</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeAttendanceTableBody">
+                                <!-- Les données seront remplies par JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- No Employee Selected Message -->
+                <div id="noEmployeeMessage" class="no-employee-message">
+                    <div class="message-content">
+                        <i class="fas fa-user-clock"></i>
+                        <h3>Aucun employé sélectionné</h3>
+                        <p>Veuillez rechercher et sélectionner un employé pour voir ses détails de présence.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="empAtt.js"></script>
+    <script>
+        // Ajouter en fin de body avant </html>
+        document.addEventListener('DOMContentLoaded', () => {
+          if (typeof Dashboard !== 'undefined') {
+            Dashboard.init();
+          }
+        });
+      </script>
+</body>
+</html>

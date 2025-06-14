@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr" theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Employés | Dashboard Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="employee.css">
+</head>
+<body>
+    <!-- Dashboard Container -->
+    <div class="dashboard" id="dashboardContainer">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="logoCAF.png" alt="CAF Logo" style="height: 50px;">
+            </div>
+            <button class="sidebar-toggle-btn" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="menu">
+                <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
+                <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-btn">
+                      <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
+                      <i class="fas fa-caret-down dropdown-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                      <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Présence des employés</a></li>
+                      <li><a href="empAtt.html"><i class="fas fa-user-clock"></i> Présence par employé</a></li>
+                      <li><a href="prsheet.html" class="active"><i class="fas fa-calendar-alt"></i> Feuille de Présence</a></li>
+                    </ul>
+                </li>
+                <li><a href="parameter.html"><i class="fas fa-cog"></i> <span class="menu-text">Settings</span></a></li>
+            </ul>
+            <button id="logoutBtn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="menu-text">Logout</span>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left"></div> 
+              
+                <div class="header-right">
+                    <button id="themeToggle" title="Toggle dark/light mode">🌙</button>
+                  <div class="user-profile">
+                    <img src="1.jpg" alt="Admin" />
+                    <div class="user-info">
+                      <span class="user-name">AMR</span>
+                      <span class="user-role">ADMIN</span>
+                    </div>
+              
+                    <!-- Formulaire au survol -->
+                    <div class="user-popup">
+                      <p><strong>Nom :</strong> AMR</p>
+                      <p><strong>Statut :</strong> ADMIN</p>
+                    </div>
+                  </div>
+                </div>
+            </div>
+
+            <!-- Employees Content -->
+            <div class="content">
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <div class="search-container">
+                        <input type="text" id="employeeSearch" placeholder="Rechercher un employé...">
+                        <button class="search-btn"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div class="filter-container">
+                        <select id="departmentFilter">
+                            <option value="">Tous les départements</option>
+                            <option value="Terrain">Terrain</option>
+                            <option value="Tribunes">Tribunes</option>
+                            <option value="Gradins et sièges">Gradins et sièges</option>
+                            <option value="Parking">Parking</option>
+                            <option value="Vestiaires">Vestiaires</option>
+                            <option value="Installations médicales">Installations médicales</option>
+                            <option value="Bureaux">Bureaux</option>
+                            <option value="Espace média">Espace média</option>
+                            <option value="Technique">Technique</option>
+                            <option value="Sécurité">Sécurité</option>
+                            <option value="Accueil">Accueil</option>
+                            <option value="Administration">Administration</option>
+                            <option value="Entretien">Entretien</option>
+                        </select>
+                        <select id="statusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="ACTIF">Actif</option>
+                            <option value="EN_CONGE">En congé</option>
+                            <option value="INACTIF">Inactif</option>
+                        </select>
+                    </div>
+                    <button id="addEmployeeBtn" class="add-btn">
+                        <i class="fas fa-plus"></i> Ajouter un employé
+                    </button>
+                </div>
+
+                <!-- Employees Table -->
+                <div class="table-container">
+                    <table id="employeesTable">
+                        <thead>
+                            <tr>
+                                <th>Nom <i class="fas fa-sort"></i></th>
+                                <th>Rôle <i class="fas fa-sort"></i></th>
+                                <th>Département <i class="fas fa-sort"></i></th>
+                                <th>Mobile</th>
+                                <th>Date d'embauche <i class="fas fa-sort"></i></th>
+                                <th>Email</th>
+                                <th>Genre</th>
+                                <th>Adresse</th>
+                                <th>Statut <i class="fas fa-sort"></i></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTableBody">
+                            <!-- Employee rows will be added here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button id="prevPage" disabled><i class="fas fa-chevron-left"></i></button>
+                    <div id="pageNumbers" class="page-numbers">
+                        <!-- Page numbers will be added here by JavaScript -->
+                    </div>
+                    <button id="nextPage"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Form Modal (Add/Edit) -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Ajouter un employé</h2>
+                <button class="close-btn" id="closeModal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="employeeForm">
+                <input type="hidden" id="employeeId">
+                <input type="hidden" id="photoData">
+                
+                <!-- Photo preview section -->
+                <div class="employee-photo-preview">
+                    <div class="photo-container">
+                        <img id="photoPreview" src="https://ui-avatars.com/api/?name=Nouvel+Employé&background=random" alt="Photo de l'employé">
+                    </div>
+                    <div class="photo-upload-container">
+                        <label for="photoUpload" class="photo-upload-btn">
+                            <i class="fas fa-camera"></i> Changer la photo
+                        </label>
+                        <input type="file" id="photoUpload" accept="image/*" class="hidden-input">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Nom complet*</label>
+                        <input type="text" id="name" name="name" required>
+                        <span class="error-message" id="nameError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Rôle*</label>
+                        <input type="text" id="role" name="role" required>
+                        <span class="error-message" id="roleError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="department">Département*</label>
+                        <select id="department" name="department" required>
+                            <option value="">Sélectionner</option>
+                            <option value="Terrain">Terrain</option>
+                            <option value="Tribunes">Tribunes</option>
+                            <option value="Gradins et sièges">Gradins et sièges</option>
+                            <option value="Parking">Parking</option>
+                            <option value="Vestiaires">Vestiaires</option>
+                            <option value="Installations médicales">Installations médicales</option>
+                            <option value="Bureaux">Bureaux</option>
+                            <option value="Espace média">Espace média</option>
+                            <option value="Technique">Technique</option>
+                            <option value="Sécurité">Sécurité</option>
+                            <option value="Accueil">Accueil</option>
+                            <option value="Administration">Administration</option>
+                            <option value="Entretien">Entretien</option>
+                        </select>
+                        <span class="error-message" id="departmentError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="mobile">Mobile*</label>
+                        <input type="tel" id="mobile" name="mobile" required>
+                        <span class="error-message" id="mobileError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="joiningDate">Date d'embauche*</label>
+                        <input type="date" id="joiningDate" name="joiningDate" required>
+                        <span class="error-message" id="joiningDateError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email*</label>
+                        <input type="email" id="email" name="email" required>
+                        <span class="error-message" id="emailError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gender">Genre*</label>
+                        <select id="gender" name="gender" required>
+                            <option value="">Sélectionner</option>
+                            <option value="Homme">Homme</option>
+                            <option value="Femme">Femme</option>
+                        </select>
+                        <span class="error-message" id="genderError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Statut*</label>
+                        <select id="status" name="status" required>
+                            <option value="">Sélectionner</option>
+                            <option value="ACTIF">Actif</option>
+                            <option value="EN_CONGE">En congé</option>
+                            <option value="INACTIF">Inactif</option>
+                        </select>
+                        <span class="error-message" id="statusError"></span>
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <label for="address">Adresse</label>
+                    <textarea id="address" name="address" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancelBtn" class="cancel-btn">Annuler</button>
+                    <button type="submit" id="saveBtn" class="save-btn">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Employee View Modal -->
+    <div id="viewEmployeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Détails de l'employé</h2>
+                <button class="close-btn" id="closeViewModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="view-content">
+                <div class="view-photo-container">
+                    <img id="viewPhoto" src="/placeholder.svg" alt="Photo de l'employé">
+                </div>
+                <div class="view-details">
+                    <h3 id="viewName"></h3>
+                    <p id="viewRole"></p>
+                    <div id="viewStatus" class="status-badge"></div>
+                    
+                    <div class="details-section">
+                        <h4>Informations personnelles</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Genre:</span>
+                                <span id="viewGender" class="detail-value"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Mobile:</span>
+                                <span id="viewMobile" class="detail-value"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Email:</span>
+                                <span id="viewEmail" class="detail-value"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Adresse:</span>
+                                <span id="viewAddress" class="detail-value"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="details-section">
+                        <h4>Informations professionnelles</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Département:</span>
+                                <span id="viewDepartment" class="detail-value"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Date d'embauche:</span>
+                                <span id="viewJoiningDate" class="detail-value"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="view-actions">
+                    <button id="editFromViewBtn" class="edit-btn"><i class="fas fa-edit"></i> Modifier</button>
+                    <button id="closeViewBtn" class="cancel-btn">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content delete-modal">
+            <div class="modal-header">
+                <h2>Confirmer la suppression</h2>
+                <button class="close-btn" id="closeDeleteModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer cet employé ? Cette action est irréversible.</p>
+                <div class="employee-info" id="deleteEmployeeInfo">
+                    <!-- Employee info will be added here by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelDeleteBtn" class="cancel-btn">Annuler</button>
+                <button id="confirmDeleteBtn" class="delete-btn">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    <script src="employee.js"></script>
+</body>
+</html>
