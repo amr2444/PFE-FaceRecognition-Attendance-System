@@ -1,0 +1,31 @@
+server:
+  port: 0
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:dreamcase-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate
+  h2:
+    console:
+      enabled: false
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  seed:
+    local-h2:
+      enabled: false
+  security:
+    bootstrap-admin:
+      enabled: false
+    bootstrap-recognition-client:
+      enabled: false

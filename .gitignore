@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+.env
+
+BackEnd/.m2/
+BackEnd/data/
+BackEnd/spring-boot.err
+BackEnd/spring-boot.err.log
+BackEnd/spring-boot.log
+
+python_app/__pycache__/

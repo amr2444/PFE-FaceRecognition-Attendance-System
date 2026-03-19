@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Fonction pour gérer le changement de mot de passe
-    function handlePasswordChange() {
+    async function handlePasswordChange() {
         if (!currentPassword || !newPassword || !confirmPassword) return;
         
         const current = currentPassword.value;
@@ -345,13 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Vérifier si les champs sont remplis
         if (!current || !newPass || !confirm) {
             showNotification('Veuillez remplir tous les champs.', 'error');
-            return;
-        }
-        
-        // Vérifier si le mot de passe actuel est correct (simulé)
-        const storedPassword = localStorage.getItem('userPassword') || 'admin123';
-        if (current !== storedPassword) {
-            showNotification('Le mot de passe actuel est incorrect.', 'error');
             return;
         }
         
@@ -366,17 +359,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasUppercase = /[A-Z]/.test(newPass);
         const hasLowercase = /[a-z]/.test(newPass);
         const hasNumber = /[0-9]/.test(newPass);
+        const hasSpecial = /[^A-Za-z0-9]/.test(newPass);
         
         if (!hasLength || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
             showNotification('Le mot de passe ne répond pas aux exigences de sécurité.', 'error');
             return;
         }
-        
-        // Simuler la mise à jour du mot de passe
-        localStorage.setItem('userPassword', newPass);
-        
-        // Afficher un message de succès
-        showNotification('Votre mot de passe a été mis à jour avec succès.', 'success');
+
+        try {
+            const response = await fetch('http://localhost:8080/auth/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    currentPassword: current,
+                    newPassword: newPass
+                })
+            });
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload.message || 'Impossible de mettre a jour le mot de passe.');
+            }
+
+            showNotification('Votre mot de passe a ete mis a jour avec succes.', 'success');
+        } catch (error) {
+            showNotification(error.message || 'Impossible de mettre a jour le mot de passe.', 'error');
+            return;
+        }
         
         // Réinitialiser les champs
         currentPassword.value = '';

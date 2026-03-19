@@ -82,6 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
             domElements.itemsPerPageSelect.addEventListener('change', function() {
                 appState.itemsPerPage = parseInt(this.value);
                 appState.currentPage = 1;
+                resetSelection();
                 loadAttendances();
             });
         }
@@ -160,7 +161,7 @@ document.addEventListener("DOMContentLoaded", function () {
             appState.totalElements = data.totalElements;
             appState.totalPages = data.totalPages;
             
-            updateAttendancesTable(data.content);
+            updateAttendancesTable(data.content || []);
             updatePaginationControls();
             
         } catch (error) {
@@ -171,13 +172,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function updateAttendancesTable(attendances) {
         if (!domElements.tableBody) return;
+
+        if (!attendances.length) {
+            domElements.tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="error-message">Aucune presence trouvee.</td>
+                </tr>
+            `;
+            updateSelectAllCheckbox();
+            return;
+        }
         
         domElements.tableBody.innerHTML = attendances.map(attendance => `
             <tr>
-                
-               
-               
-                <td>${formatTime(attendance.employeeName)}</td>
+                <td class="checkbox-cell">
+                    <input type="checkbox"
+                           class="attendance-checkbox"
+                           data-id="${attendance.presenceJourId}"
+                           ${appState.selectedAttendances.has(attendance.presenceJourId) ? 'checked' : ''}>
+                </td>
+                <td>${attendance.employeeName || '-'}</td>
                 <td>${formatTime(attendance.firstIn)}</td>
                 <td>${formatTime(attendance.breakTime)}</td>
                 <td>${formatTime(attendance.lastOut)}</td>
@@ -212,6 +226,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 updateBulkActions();
             });
         });
+
+        updateSelectAllCheckbox();
     }
 
     function updatePaginationControls() {
@@ -275,11 +291,13 @@ document.addEventListener("DOMContentLoaded", function () {
         if (newPage < 1 || newPage > appState.totalPages) return;
         
         appState.currentPage = newPage;
+        resetSelection();
         loadAttendances();
     }
 
     function filterAttendances() {
         appState.currentPage = 1;
+        resetSelection();
         loadAttendances();
     }
 
@@ -291,14 +309,25 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         
         try {
-            const updates = Array.from(appState.selectedAttendances).map(id => 
-                updateAttendance(id, { statut: status })
+            const attendances = await Promise.all(
+                Array.from(appState.selectedAttendances).map(id => fetchAttendanceDetails(id))
+            );
+
+            const updates = attendances.map(attendance =>
+                updateAttendance(attendance.presenceJourId, {
+                    employeeId: attendance.employeeId,
+                    firstIn: attendance.firstIn || null,
+                    breakTime: attendance.breakTime || null,
+                    lastOut: attendance.lastOut || null,
+                    statut: status,
+                    shift: attendance.shift || '',
+                    note: attendance.note || ''
+                })
             );
             
             await Promise.all(updates);
             loadAttendances();
-            appState.selectedAttendances.clear();
-            updateBulkActions();
+            resetSelection();
             
         } catch (error) {
             console.error('Erreur lors de la mise à jour groupée:', error);
@@ -308,62 +337,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
    async function exportAttendances() {
     try {
-        // Récupérer les paramètres de filtrage actuels
-        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-        const statusValue = statusFilter ? statusFilter.value : '';
-        const shiftValue = shiftFilter ? shiftFilter.value : '';
-        
-        // Construire l'URL de l'API
-        let url = `${API_BASE_URL}/?page=0&size=1000`; // Taille importante pour tout exporter
-        
-        // Ajouter les paramètres de filtre
-        if (searchTerm) url += `&searchByNom=${encodeURIComponent(searchTerm)}`;
-        if (statusValue) url += `&searchByStatus=${encodeURIComponent(statusValue)}`;
-        if (shiftValue) url += `&searchByShift=${encodeURIComponent(shiftValue)}`;
-        
-        // Faire la requête à l'API
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error('Erreur lors de la récupération des données');
-        }
-        
-        const data = await response.json();
-        const presences = data.content;
-        
-        // Créer l'en-tête CSV
-        let csv = 'Nom,First In,Break,Last Out,Total Heures,Status,Shift,Notes\n';
-        
-        // Ajouter les données
-        presences.forEach(presence => {
-            csv += `"${presence.employeeName || ''}",` +
-                   `"${presence.firstIn || ''}",` +
-                   `"${presence.breakTime || ''}",` +
-                   `"${presence.lastOut || ''}",` +
-                   `"${presence.totalHeures || '0h'}",` +
-                   `"${presence.statut || ''}",` +
-                   `"${presence.shift || ''}",` +
-                   `"${presence.note || ''}"\n`;
+        const params = new URLSearchParams({
+            format: 'csv',
+            exportAll: 'true',
+            ...(domElements.searchInput?.value && { searchByNom: domElements.searchInput.value }),
+            ...(domElements.statusFilter?.value && { searchByStatus: domElements.statusFilter.value }),
+            ...(domElements.shiftFilter?.value && { searchByShift: domElements.shiftFilter.value })
         });
-        
-        // Créer un blob et un lien de téléchargement
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+        const response = await fetch(`${API_BASE_URL}/export?${params.toString()}`);
+
+        if (!response.ok) {
+            throw new Error('Erreur lors de l\'export des presences');
+        }
+
+        const blob = await response.blob();
         const link = document.createElement('a');
         const urlObject = URL.createObjectURL(blob);
-        
-        // Configurer le lien
-        link.setAttribute('href', urlObject);
-        link.setAttribute('download', `presences_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        
-        // Ajouter à la page, cliquer et supprimer
+        const contentDisposition = response.headers.get('Content-Disposition') || '';
+        const fileNameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+        const fileName = fileNameMatch ? fileNameMatch[1] : `presences_${new Date().toISOString().split('T')[0]}.csv`;
+
+        link.href = urlObject;
+        link.download = fileName;
+        link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        // Libérer l'URL de l'objet blob
+
         setTimeout(() => URL.revokeObjectURL(urlObject), 100);
-        
     } catch (error) {
         console.error('Erreur lors de l\'export:', error);
         alert('Une erreur est survenue lors de l\'export: ' + error.message);
@@ -499,6 +501,12 @@ document.addEventListener("DOMContentLoaded", function () {
         return await response.json();
     }
 
+    async function fetchAttendanceDetails(id) {
+        const response = await fetch(`${API_BASE_URL}/${id}`);
+        if (!response.ok) throw new Error('Erreur lors de la recuperation des donnees');
+        return await response.json();
+    }
+
     async function deleteAttendance() {
         if (!appState.currentAttendanceId) return;
         
@@ -581,9 +589,14 @@ document.addEventListener("DOMContentLoaded", function () {
         
         domElements.tableBody.innerHTML = `
             <tr>
-                <td colspan="10" class="error-message">${message}</td>
+                <td colspan="9" class="error-message">${message}</td>
             </tr>
         `;
+    }
+
+    function resetSelection() {
+        appState.selectedAttendances.clear();
+        updateBulkActions();
     }
 
     // Fonctions globales
@@ -592,7 +605,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const response = await fetch(`${API_BASE_URL}/${id}`);
             if (!response.ok) throw new Error('Erreur lors de la récupération des données');
             
-            const attendance = await response.json();
+            const attendance = await fetchAttendanceDetails(id);
             
             if (!domElements.modalTitle || !domElements.attendanceForm) return;
             
@@ -633,7 +646,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const response = await fetch(`${API_BASE_URL}/${id}`);
             if (!response.ok) throw new Error('Erreur lors de la récupération des données');
             
-            const attendance = await response.json();
+            const attendance = await fetchAttendanceDetails(id);
             
             appState.currentAttendanceId = id;
             

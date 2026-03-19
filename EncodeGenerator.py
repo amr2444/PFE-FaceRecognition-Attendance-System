@@ -1,110 +1,80 @@
-# encode_generator.py
+import base64
+import os
+import pickle
 
 import cv2
 import face_recognition
-import pickle
-import os
-import psycopg2
-from psycopg2 import OperationalError, sql
 
-# --- Fonction pour se connecter à PostgreSQL ---
-def connect_to_postgres():
-    try:
-        connection = psycopg2.connect(
-            host="localhost",
-            database="postgres",    # ou votre nom de base
-            user="postgres",
-            password="admin"
-        )
-        return connection
-    except OperationalError as e:
-        print(f"Erreur de connexion à PostgreSQL : {e}")
-        return None
+from python_app.backend_client import BackendClient, BackendClientError
+from python_app.config import ENCODE_FILE_PATH, IMAGES_DIR
 
-# --- Création (si besoin) de la table EmployeeImages ---
-def create_employee_images_table(conn):
-    with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS EmployeeImages (
-                emp_id VARCHAR(50) PRIMARY KEY,
-                image BYTEA
-            )
-        """)
-        conn.commit()
 
-# --- Parcours du dossier Images/ ---
-folderPath = 'Images'
-pathList = os.listdir(folderPath)
-print("Fichiers trouvés dans Images/ :", pathList)
-
-imgList = []
-employeeIds = []
-
-for filename in pathList:
-    # 1. Charger l’image pour encodage
-    img = cv2.imread(os.path.join(folderPath, filename))
-    if img is None:
-        print(f"Impossible de charger {filename}. Je passe au suivant.")
-        continue
-    imgList.append(img)
-
-    # 2. Extraire l’ID d’employé depuis le nom de fichier (exemple : "E123.jpg" -> "E123")
-    emp_id = os.path.splitext(filename)[0]
-    employeeIds.append(emp_id)
-
-    # 3. Redimensionner l’image à 216x216 pixels avant d’insérer en base
-    resized_img = cv2.resize(img, (216, 216))
-
-    # 4. Convertir l’image redimensionnée en bytes (JPEG)
-    success, buffer = cv2.imencode('.jpg', resized_img)
+def image_to_data_url(image):
+    success, buffer = cv2.imencode(".jpg", image)
     if not success:
-        print(f"❌ Échec de l'encodage de '{filename}' en JPEG, je passe.")
-        continue
-    img_bytes = buffer.tobytes()
+        raise ValueError("Impossible d'encoder l'image en JPEG.")
+    encoded = base64.b64encode(buffer.tobytes()).decode("ascii")
+    return f"data:image/jpeg;base64,{encoded}"
 
-    # 5. Insérer ou mettre à jour dans PostgreSQL
-    conn = connect_to_postgres()
-    if conn:
+
+def build_encoding(image):
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    encodings = face_recognition.face_encodings(rgb_image)
+    if not encodings:
+        return None
+    return encodings[0]
+
+
+def main():
+    if not os.path.isdir(IMAGES_DIR):
+        print(f"Dossier Images introuvable: {IMAGES_DIR}")
+        return 1
+
+    backend_client = BackendClient()
+    file_names = sorted(os.listdir(IMAGES_DIR))
+    print("Fichiers trouves dans Images/ :", file_names)
+
+    encode_list_known = []
+    employee_ids = []
+
+    for file_name in file_names:
+        file_path = os.path.join(IMAGES_DIR, file_name)
+        if not os.path.isfile(file_path):
+            continue
+
+        employee_id_text, _ = os.path.splitext(file_name)
+        if not employee_id_text.isdigit():
+            print(f"Nom de fichier ignore (ID invalide) : {file_name}")
+            continue
+
+        employee_id = int(employee_id_text)
+        image = cv2.imread(file_path)
+        if image is None:
+            print(f"Impossible de charger {file_name}.")
+            continue
+
+        face_encoding = build_encoding(image)
+        if face_encoding is None:
+            print(f"Aucun visage detecte dans {file_name}.")
+            continue
+
         try:
-            # Crée la table si elle n’existe pas (une seule fois, mais on peut le faire à chaque insertion)
-            create_employee_images_table(conn)
+            backend_client.get_employee(employee_id)
+            backend_client.upload_employee_photo(employee_id, image_to_data_url(cv2.resize(image, (216, 216))))
+        except (BackendClientError, ValueError) as exc:
+            print(f"Synchronisation backend impossible pour {file_name}: {exc}")
+            continue
 
-            with conn.cursor() as cur:
-                # ON CONFLICT pour gérer la mise à jour des images existantes
-                query = sql.SQL("""
-                    INSERT INTO EmployeeImages (emp_id, image)
-                    VALUES (%s, %s)
-                    ON CONFLICT (emp_id) DO UPDATE
-                      SET image = EXCLUDED.image
-                """)
-                cur.execute(query, (emp_id, psycopg2.Binary(img_bytes)))
-            conn.commit()
-            print(f"✅ Image redimensionnée et insérée/mise à jour pour '{filename}'.")
-        except Exception as e:
-            print(f"❌ Erreur lors de l’insertion de '{filename}' : {e}")
-        finally:
-            conn.close()
+        encode_list_known.append(face_encoding)
+        employee_ids.append(employee_id)
+        print(f"Image synchronisee et encodage genere pour l'employe {employee_id}.")
 
-print("IDs employés extraits :", employeeIds)
+    with open(ENCODE_FILE_PATH, "wb") as file_obj:
+        pickle.dump([encode_list_known, employee_ids], file_obj)
 
-# --- Fonction pour obtenir les encodages faciaux ---
-def findEncodings(imagesList):
-    encodeList = []
-    for img in imagesList:
-        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        enc = face_recognition.face_encodings(rgb_img)
-        if enc:
-            encodeList.append(enc[0])
-        else:
-            print("⚠️ Aucune face détectée sur une image, je passe.")
-    return encodeList
+    print(f"EncodeFile cree avec {len(employee_ids)} employe(s).")
+    return 0
 
-print("Encodage des visages démarré...")
-encodeListKnown = findEncodings(imgList)
-encodeListKnownWithIds = [encodeListKnown, employeeIds]
-print("Encodage terminé.")
 
-# --- Sauvegarde dans le fichier pickle ---
-with open("EncodeFile.p", 'wb') as f:
-    pickle.dump(encodeListKnownWithIds, f)
-print("✅ EncodeFile.p généré.")
+if __name__ == "__main__":
+    raise SystemExit(main())

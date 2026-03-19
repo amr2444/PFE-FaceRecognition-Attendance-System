@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login | Dashboard</title>
+    <title>CASE Attendance | Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="login.css">
 </head>
 <body class="login-page">
-    <!-- Ajout de l'horloge -->
     <div class="clock-container">
         <div class="clock">
             <div class="clock-face">
@@ -24,12 +23,25 @@
                 <div class="logo-container">
                     <i class="fas fa-cube logo-icon"></i>
                 </div>
-                <h1>MyAdmin</h1>
-                <p>Connectez-vous à votre tableau de bord</p>
+                <h1>CASE Attendance</h1>
+                <p>Connectez-vous au tableau de bord d'administration</p>
             </div>
-            
+
             <div id="notification" class="notification" style="display: none;"></div>
-            
+
+            <div class="auth-mode-banner" aria-live="polite">
+                <div class="auth-mode-header">
+                    <span class="auth-badge" id="authModeBadge">JWT backend</span>
+                    <span class="auth-security-hint" id="authSecurityHint">Authentification protegee</span>
+                </div>
+                <p id="authModeDescription">
+                    Cette page utilise une authentification backend avec token Bearer. Les acces aux endpoints sensibles sont desormais proteges.
+                </p>
+                <p class="auth-help">
+                    Utilisez l adresse e-mail et le mot de passe du compte admin cree cote backend.
+                </p>
+            </div>
+
             <form id="login-form" class="login-form">
                 <div class="form-group">
                     <label for="username">Nom d'utilisateur</label>
@@ -38,7 +50,7 @@
                         <input type="text" id="username" placeholder="Entrez votre nom d'utilisateur" required autocomplete="username">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Mot de passe</label>
                     <div class="input-group">
@@ -49,41 +61,40 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="form-options">
                     <div class="remember-me">
                         <input type="checkbox" id="remember" name="remember">
                         <label for="remember">Se souvenir de moi</label>
                     </div>
-                    <a href="#" class="forgot-password" id="forgot-password-link">Mot de passe oublié?</a>
+                    <a href="#" class="forgot-password" id="forgot-password-link">Mot de passe oublie?</a>
                 </div>
-                
+
                 <button type="submit" class="login-btn">
                     <span class="btn-text">Se connecter</span>
                     <i class="fas fa-arrow-right btn-icon"></i>
                 </button>
             </form>
-            
+
             <div class="login-footer">
-                <p></strong></p>
+                <p>Prototype fonctionnel pour la gestion de presence et la reconnaissance faciale.</p>
             </div>
         </div>
-        
+
         <div class="login-image">
             <div class="overlay"></div>
             <div class="image-content">
-                <h2>Tableau de bord d'administration</h2>
-                <p>Gérez vos utilisateurs, suivez les statistiques et plus encore.</p>
+                <h2>Gestion de presence et reconnaissance faciale</h2>
+                <p>Suivez les employes, les presences du jour et le flux de pointage en temps reel.</p>
             </div>
         </div>
     </div>
 
-    <!-- Modal pour réinitialiser le mot de passe -->
     <div id="password-reset-modal" class="password-reset-modal">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
-            <h2>Réinitialiser le mot de passe</h2>
-            <p>Entrez votre adresse e-mail pour recevoir un lien de réinitialisation.</p>
+            <h2>Reinitialiser le mot de passe</h2>
+            <p>Entrez votre adresse e-mail pour recevoir un lien de reinitialisation.</p>
             <div class="form-group">
                 <div class="input-group">
                     <i class="fas fa-envelope input-icon"></i>
@@ -97,159 +108,6 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Mise à jour de l'horloge
-            function updateClock() {
-                const now = new Date();
-                
-                // Format de l'heure: HH:MM:SS
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                const seconds = String(now.getSeconds()).padStart(2, '0');
-                const timeString = `${hours}:${minutes}:${seconds}`;
-                
-                // Format de la date: Jour, JJ Mois AAAA
-                const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-                const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-                
-                const day = days[now.getDay()];
-                const date = now.getDate();
-                const month = months[now.getMonth()];
-                const year = now.getFullYear();
-                
-                const dateString = `${day}, ${date} ${month} ${year}`;
-                
-                // Mise à jour des éléments HTML
-                document.getElementById('clock-time').textContent = timeString;
-                document.getElementById('clock-date').textContent = dateString;
-            }
-            
-            // Mettre à jour l'horloge chaque seconde
-            updateClock();
-            setInterval(updateClock, 1000);
-            
-            // Toggle password visibility
-            const togglePassword = document.getElementById('toggle-password');
-            const password = document.getElementById('password');
-            
-            togglePassword.addEventListener('click', function() {
-                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                password.setAttribute('type', type);
-                this.querySelector('i').classList.toggle('fa-eye');
-                this.querySelector('i').classList.toggle('fa-eye-slash');
-            });
-            
-            // Check if user was previously logged in
-            const rememberMe = localStorage.getItem('rememberMe') === 'true';
-            if (rememberMe) {
-                document.getElementById('remember').checked = true;
-                document.getElementById('username').value = localStorage.getItem('username') || '';
-            }
-            
-            // Modal de réinitialisation de mot de passe
-            const modal = document.getElementById('password-reset-modal');
-            const forgotPasswordLink = document.getElementById('forgot-password-link');
-            const closeModal = document.querySelector('.close-modal');
-            const resetPasswordBtn = document.getElementById('reset-password-btn');
-            
-            forgotPasswordLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                modal.style.display = 'flex';
-            });
-            
-            closeModal.addEventListener('click', function() {
-                modal.style.display = 'none';
-            });
-            
-            window.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-            
-            resetPasswordBtn.addEventListener('click', function() {
-                const email = document.getElementById('reset-email').value;
-                if (email) {
-                    // Simuler l'envoi d'un email
-                    modal.style.display = 'none';
-                    showNotification('Un lien de réinitialisation a été envoyé à votre adresse e-mail.', 'success');
-                    
-                    // Indiquer que le mot de passe a été modifié (pour la page des paramètres)
-                    localStorage.setItem('passwordChanged', 'true');
-                }
-            });
-            
-            // Form submission
-            document.getElementById('login-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                const remember = document.getElementById('remember').checked;
-                
-                // Show loading state
-                const loginBtn = document.querySelector('.login-btn');
-                loginBtn.classList.add('loading');
-                loginBtn.querySelector('.btn-text').textContent = 'Connexion...';
-                
-                // Simulate API call
-                setTimeout(() => {
-                    // Récupérer le mot de passe stocké ou utiliser la valeur par défaut
-                    const storedPassword = localStorage.getItem('userPassword') || 'admin123';
-                    
-                    // Simple validation (replace with real auth)
-                    if (username === "admin@gmail.com" && password === storedPassword) {
-                        // Save login state
-                        localStorage.setItem('isLoggedIn', 'true');
-                        localStorage.setItem('role', 'admin');
-                        
-                        // Remember me functionality
-                        if (remember) {
-                            localStorage.setItem('rememberMe', 'true');
-                            localStorage.setItem('username', username);
-                        } else {
-                            localStorage.removeItem('rememberMe');
-                            localStorage.removeItem('username');
-                        }
-                        
-                        // Show success notification
-                        showNotification('Connexion réussie! Redirection...', 'success');
-                        
-                        // Redirect after a short delay
-                        setTimeout(() => {
-                            window.location.href = 'index.html';
-                        }, 1000);
-                    } else {
-                        // Reset loading state
-                        loginBtn.classList.remove('loading');
-                        loginBtn.querySelector('.btn-text').textContent = 'Se connecter';
-                        
-                        // Show error notification
-                        showNotification('Identifiants incorrects!', 'error');
-                    }
-                }, 1000); // Simulate network delay
-            });
-            
-            // Notification function
-            function showNotification(message, type) {
-                const notification = document.getElementById('notification');
-                notification.textContent = message;
-                notification.className = 'notification ' + type;
-                notification.style.display = 'block';
-                
-                // Auto hide after 5 seconds
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 5000);
-            }
-            
-            // Add animation classes after page load
-            setTimeout(() => {
-                document.querySelector('.login-container').classList.add('animate-in');
-                document.querySelector('.login-image').classList.add('animate-in');
-            }, 100);
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

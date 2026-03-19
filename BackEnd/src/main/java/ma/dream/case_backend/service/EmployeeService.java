@@ -35,13 +35,13 @@ public class EmployeeService {
     private final Messages messages;
 
 
-    public Employee createEmployee(EmployeeDto employeeDto) {
+    public EmployeeDto createEmployee(EmployeeDto employeeDto) {
         Employee employeeEntity = employeeMapper.toEmployee(employeeDto);
 
         employeeEntity.setCreationDate(LocalDateTime.now());
         employeeEntity.setLastUpdateDate(LocalDateTime.now());
 
-        return employeRepository.save(employeeEntity);
+        return employeeMapper.toEmployeeDto(employeRepository.save(employeeEntity));
     }
 
     public Page<EmployeeDto> getAllEmployees(int page, int size, String searchByNom, String searchByDepartement, String searchByStatus, String sortBy, String direction) {
@@ -134,6 +134,7 @@ public class EmployeeService {
         employee.setEmail(employeeDto.getEmail());
         employee.setGenre(employeeDto.getGenre());
         employee.setAdresse(employeeDto.getAdresse());
+        employee.setPhoto(employeeDto.getPhoto());
         employee.setStatut(employeeDto.getStatut());
 
         employee.setLastUpdateDate(LocalDateTime.now(ZoneOffset.UTC));
@@ -169,6 +170,17 @@ public class EmployeeService {
 
     public long getTotalEmployees() {
         return employeRepository.count();
+    }
+
+    public EmployeeDto updateEmployeePhoto(Long id, String photo) throws TechnicalException {
+        log.debug("Start service update employee photo id {}", id);
+        Employee employee = employeRepository.findById(id)
+                .orElseThrow(() -> new TechnicalException(messages.get(GlobalConstants.CASE_NOT_FOUND)));
+
+        employee.setPhoto(photo);
+        employee.setLastUpdateDate(LocalDateTime.now(ZoneOffset.UTC));
+
+        return employeeMapper.toEmployeeDto(employeRepository.save(employee));
     }
 
 

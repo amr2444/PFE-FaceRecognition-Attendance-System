@@ -32,21 +32,112 @@ function applySavedTheme() {
 document.addEventListener('DOMContentLoaded', applySavedTheme);
 
 // ===== CONSTANTS AND UTILITIES =====
+const API_ORIGIN = 'http://localhost:8080';
+const TOKEN_STORAGE_KEY = 'authToken';
+const USER_STORAGE_KEY = 'authUser';
+
 const Auth = {
-    checkLogin: () => localStorage.getItem('isLoggedIn') === 'true',
-    login: (username, remember) => {
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('role', 'admin');
-        if (remember) {
-            localStorage.setItem('rememberMe', 'true');
-            localStorage.setItem('username', username);
+    modeLabel: 'JWT backend',
+    description: 'Authentification verifiee par le backend Spring Boot avec token Bearer.',
+    getStorage: () => localStorage.getItem('rememberMe') === 'true' ? localStorage : sessionStorage,
+    getToken: () => localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY),
+    getUser: () => {
+        const raw = localStorage.getItem(USER_STORAGE_KEY) || sessionStorage.getItem(USER_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    },
+    checkLogin: () => Boolean(Auth.getToken()),
+    login: async (email, password, remember) => {
+        const response = await fetch(`${API_ORIGIN}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.message || 'Authentication failed');
         }
+
+        const storage = remember ? localStorage : sessionStorage;
+        const otherStorage = remember ? sessionStorage : localStorage;
+
+        storage.setItem(TOKEN_STORAGE_KEY, payload.accessToken);
+        storage.setItem(USER_STORAGE_KEY, JSON.stringify(payload));
+        localStorage.setItem('rememberMe', remember ? 'true' : 'false');
+        localStorage.setItem('username', email);
+        otherStorage.removeItem(TOKEN_STORAGE_KEY);
+        otherStorage.removeItem(USER_STORAGE_KEY);
+        return payload;
     },
     logout: () => {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+        localStorage.removeItem(USER_STORAGE_KEY);
+        sessionStorage.removeItem(USER_STORAGE_KEY);
         localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('role');
         window.location.href = 'login.html';
     }
 };
+
+const originalFetch = window.fetch.bind(window);
+window.fetch = async (input, init = {}) => {
+    const requestUrl = typeof input === 'string' ? input : input.url;
+    const shouldAttachToken = requestUrl.startsWith(API_ORIGIN);
+    const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined) || {});
+
+    if (shouldAttachToken && !requestUrl.endsWith('/auth/login')) {
+        const token = Auth.getToken();
+        if (token) {
+            headers.set('Authorization', `Bearer ${token}`);
+        }
+    }
+
+    const response = await originalFetch(input, { ...init, headers });
+    if (response.status === 401 && !requestUrl.endsWith('/auth/login')) {
+        Auth.logout();
+    }
+    return response;
+};
+
+function renderAuthDemoNotice() {
+    const badge = document.getElementById('authModeBadge');
+    const description = document.getElementById('authModeDescription');
+    const securityHint = document.getElementById('authSecurityHint');
+
+    if (badge) {
+        badge.textContent = Auth.modeLabel;
+    }
+    if (description) {
+        description.textContent = Auth.description;
+    }
+    if (securityHint) {
+        securityHint.textContent = 'Token Bearer actif';
+    }
+}
+
+function initLoginClock() {
+    const timeElement = document.getElementById('clock-time');
+    const dateElement = document.getElementById('clock-date');
+
+    if (!timeElement || !dateElement) {
+        return;
+    }
+
+    const updateClock = () => {
+        const now = new Date();
+        timeElement.textContent = now.toLocaleTimeString('fr-FR', { hour12: false });
+        dateElement.textContent = now.toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    };
+
+    updateClock();
+    setInterval(updateClock, 1000);
+}
 
 // Add toggle button support
 document.addEventListener('DOMContentLoaded', () => {
@@ -126,12 +217,20 @@ const initLoginPage = () => {
     const username = document.getElementById('username');
     const rememberCheckbox = document.getElementById('remember');
     const notification = document.getElementById('notification');
+    const modal = document.getElementById('password-reset-modal');
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const closeModal = document.querySelector('.close-modal');
+    const resetPasswordBtn = document.getElementById('reset-password-btn');
+    const resetEmail = document.getElementById('reset-email');
 
     // Vérifier si déjà connecté
     if (Auth.checkLogin()) {
         window.location.href = 'index.html';
         return;
     }
+
+    renderAuthDemoNotice();
+    initLoginClock();
 
     // Remplir les champs si "Se souvenir de moi"
     const rememberMe = localStorage.getItem('rememberMe') === 'true';
@@ -143,9 +242,46 @@ const initLoginPage = () => {
     // Gestion de la visibilité du mot de passe
     UI.togglePasswordVisibility(togglePassword, password);
 
+    if (forgotPasswordLink && modal) {
+        forgotPasswordLink.addEventListener('click', event => {
+            event.preventDefault();
+            modal.style.display = 'flex';
+        });
+    }
+
+    if (closeModal && modal) {
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+
+    if (modal) {
+        window.addEventListener('click', event => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+
+    if (resetPasswordBtn) {
+        resetPasswordBtn.addEventListener('click', async () => {
+            if (!resetEmail?.value) {
+                UI.showNotification(notification, 'Saisissez une adresse e-mail avant de continuer.', 'error');
+                return;
+            }
+
+            modal.style.display = 'none';
+            UI.showNotification(
+                notification,
+                'La reinitialisation self-service n est pas encore disponible. Contactez un administrateur.',
+                'error'
+            );
+        });
+    }
+
     // Soumission du formulaire
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const usernameValue = username.value;
             const passwordValue = password.value;
@@ -158,21 +294,18 @@ const initLoginPage = () => {
                 if (btnText) btnText.textContent = 'Connexion...';
             }
 
-            // Simulation d'authentification
-            setTimeout(() => {
-                if (usernameValue === "admin" && passwordValue === "admin123") {
-                    Auth.login(usernameValue, remember);
-                    UI.showNotification(notification, 'Connexion réussie! Redirection...', 'success');
-                    setTimeout(() => window.location.href = 'index.html', 1000);
-                } else {
-                    if (loginBtn) {
-                        loginBtn.classList.remove('loading');
-                        const btnText = loginBtn.querySelector('.btn-text');
-                        if (btnText) btnText.textContent = 'Se connecter';
-                    }
-                    UI.showNotification(notification, 'Identifiants incorrects! Essayez admin/admin123', 'error');
+            try {
+                await Auth.login(usernameValue, passwordValue, remember);
+                UI.showNotification(notification, 'Connexion reussie. Redirection...', 'success');
+                setTimeout(() => window.location.href = 'index.html', 700);
+            } catch (error) {
+                if (loginBtn) {
+                    loginBtn.classList.remove('loading');
+                    const btnText = loginBtn.querySelector('.btn-text');
+                    if (btnText) btnText.textContent = 'Se connecter';
                 }
-            }, 1000);
+                UI.showNotification(notification, error.message || 'Identifiants invalides.', 'error');
+            }
         });
     }
 
@@ -427,12 +560,9 @@ const Dashboard = {
 
         // Rafraîchissement automatique
         setInterval(() => {
-            fetch('/api/attendance/stats')
-                .then(res => res.json())
-                .then(data => {
-                    const elem = document.getElementById('todayAttendance');
-                    if (elem) elem.textContent = `${data.present}/${data.total}`;
-                });
+            if (shouldRenderDashboardStats()) {
+                fetchEmployeeStats();
+            }
         }, 30000);
     }
 };
@@ -731,50 +861,79 @@ document.addEventListener('DOMContentLoaded', () => {
             Auth.logout();
         });
     }
+
+    if (document.getElementById('todayAttendance')) {
+        fetchEmployeeStats();
+    }
 });
 
-fetchEmployeeStats()
+function shouldRenderDashboardStats() {
+    return Boolean(
+        document.getElementById('todayAttendance') &&
+        document.getElementById('absentCount') &&
+        document.getElementById('activeEmployees') &&
+        document.querySelector('.cards#employeesTableBody')
+    );
+}
 
 async function fetchEmployeeStats() {
+    if (!shouldRenderDashboardStats()) {
+        return null;
+    }
+
     try {
-        const response = await fetch('http://localhost:8080/employes/count-by-statut/all');
-        if (!response.ok) {
+        const cardsContainer = document.querySelector('.cards#employeesTableBody');
+        const todayAttendance = document.getElementById('todayAttendance');
+        const absentCount = document.getElementById('absentCount');
+        const activeEmployees = document.getElementById('activeEmployees');
+
+        const [statusResponse, totalResponse, attendanceResponse] = await Promise.all([
+            fetch('http://localhost:8080/employes/count-by-statut/all'),
+            fetch('http://localhost:8080/employes/count'),
+            fetch('http://localhost:8080/presences/statuts/today')
+        ]);
+
+        if (!statusResponse.ok || !totalResponse.ok || !attendanceResponse.ok) {
             throw new Error('Network response was not ok');
         }
-         const stats = await response.json();
 
-        const totalEmployers = stats.reduce((acc, item) => acc + item.count, 0);
-        const totalAbsences = stats.find(item => item.statut === 'EN_CONGE')?.count || 0;
+        const [stats, totalEmployees, attendanceStats] = await Promise.all([
+            statusResponse.json(),
+            totalResponse.json(),
+            attendanceResponse.json()
+        ]);
+
         const totalActif = stats.find(item => item.statut === 'ACTIF')?.count || 0;
+        const totalEnConge = stats.find(item => item.statut === 'EN_CONGE')?.count || 0;
+        const totalInactif = stats.find(item => item.statut === 'INACTIF')?.count || 0;
+        const todayPresent = attendanceStats
+            .filter(item => ['PRESENT', 'EN_PAUSE', 'TERMINE'].includes(item.statut))
+            .reduce((acc, item) => acc + item.count, 0);
+        const todayAbsent = attendanceStats.find(item => item.statut === 'ABSENT')?.count || 0;
 
-        employeesTableBody.innerHTML = `
+        cardsContainer.innerHTML = `
                 
                <div class="card">
-                        <h3>Total Users</h3>
-                        <p id="totalUsers">1</p>
+                        <h3>Total des Employes</h3>
+                        <p>${totalEmployees}</p>
                     </div>
                     <div class="card">
-                        <h3>Total des Employés</h3>
-                        <p>${totalEmployers}</p>
+                        <h3>Employes en conge</h3>
+                        <p>${totalEnConge}</p>
                     </div>
                     <div class="card">
-                        <h3>total number of work absences</h3>
-                        <p>${totalAbsences}</p>
+                        <h3>Employes inactifs</h3>
+                        <p>${totalInactif}</p>
                     </div>
             `;
 
-            todayAttendance.innerHTML = `<span>${totalActif}/${totalEmployers}</span>`;
-
-            absentCount.innerHTML = `<span>${totalAbsences}</span>`;
-
-
-            activeEmployees.innerHTML = `<span>${totalActif}</span>`;
-        return await response.json();
+        todayAttendance.textContent = `${todayPresent}/${totalEmployees}`;
+        absentCount.textContent = `${todayAbsent}`;
+        activeEmployees.textContent = `${totalActif}`;
+        return { stats, totalEmployees, attendanceStats };
         
     } catch (error) {
         console.error('Error fetching employee stats:', error);
         return null;
     }
 }
-
-

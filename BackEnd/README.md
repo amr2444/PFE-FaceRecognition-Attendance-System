@@ -1,21 +1,20 @@
-# CaseProject
+# Backend
 
-=======
+Le backend de ce projet est une API Spring Boot pour:
+- la gestion des employes
+- la gestion des presences
+- le flux metier de reconnaissance faciale
 
-## Description du Projet
+Documentation principale:
+- voir le README racine: [`../README.md`](../README.md)
+- architecture: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
+- endpoints: [`../docs/API.md`](../docs/API.md)
 
-Ce projet est une application de gestion de cases permettant de :
+Demarrage local:
 
-- Ajouter un case
-- Récupérer la liste des cases avec pagination et filtres
-- Supprimer un case
+```powershell
+./mvnw.cmd spring-boot:run
+```
 
-### Fonctionnalités Clés :
-
-1. **Ajout case** : Permet d'ajouter un nouveau case en renseignant les informations
-2. **Récupération de cases avec pagination et filtres** : Offre la possibilité de récupérer la liste des cases en fonction de critères tels que le description , la title , tout en appliquant la pagination pour limiter le nombre de résultats par page.
-3. **Suppression de case** : Supprime définitivement un case de la base de données.
-4. **Documentation API via Swagger** : L'application propose une documentation interactive des API à travers Swagger, disponible à l'adresse suivante :  
-   [Swagger UI - Documentation API](http://localhost:8080/swagger-ui/index.html#/).
-5. **Tests unitaires** : Tous les tests unitaires pour les différentes fonctionnalités.
-6. **Démonstration Postman** : Une collection Postman est disponible pour tester les API directement.
+Swagger UI:
+- `http://localhost:8080/swagger-ui/index.html`

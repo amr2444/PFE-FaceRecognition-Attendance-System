@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${DEV_DB_URL:jdbc:h2:file:./data/facerecognition;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE}
+    username: ${DEV_DB_USERNAME:sa}
+    password: ${DEV_DB_PASSWORD:}
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    baseline-on-migrate: ${APP_FLYWAY_BASELINE_ON_MIGRATE:false}
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+app:
+  seed:
+    local-h2:
+      enabled: ${APP_LOCAL_H2_SEED_ENABLED:false}
+  security:
+    bootstrap-admin:
+      enabled: ${APP_BOOTSTRAP_ADMIN_ENABLED:true}
+    surface:
+      expose-h2-console-without-auth: true
+      expose-swagger-without-auth: true

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PresenceJourRepository extends JpaRepository<PresenceJour, Long> {
@@ -15,5 +16,9 @@ public interface PresenceJourRepository extends JpaRepository<PresenceJour, Long
     @Query("SELECT p.statut, COUNT(p) FROM PresenceJour p WHERE p.creationDate BETWEEN :startOfDay AND :endOfDay GROUP BY p.statut")
     List<Object[]> countByStatutBetweenDates(@Param("startOfDay") LocalDateTime startOfDay,
                                              @Param("endOfDay") LocalDateTime endOfDay);
+
+    Optional<PresenceJour> findFirstByEmployeeEmployeeIdAndCreationDateBetween(Long employeeId,
+                                                                               LocalDateTime startOfDay,
+                                                                               LocalDateTime endOfDay);
 
 }

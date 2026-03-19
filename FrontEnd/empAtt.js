@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
     // Vérifier si l'utilisateur est connecté
-    checkLoginStatus();
+    if (!checkLoginStatus()) {
+        return;
+    }
 
     // ===== VARIABLES =====
     let employees = [];
@@ -43,17 +45,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Vérifier si l'utilisateur est connecté
     function checkLoginStatus() {
-        const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
         const loginContainer = document.getElementById("loginContainer");
         const dashboardContainer = document.getElementById("dashboardContainer");
-        
-        if (isLoggedIn) {
-            loginContainer.style.display = "none";
-            dashboardContainer.style.display = "flex";
-        } else {
-            loginContainer.style.display = "flex";
-            dashboardContainer.style.display = "none";
+
+        if (typeof Auth === "undefined" || !Auth.checkLogin()) {
+            window.location.href = "login.html";
+            return false;
         }
+
+        if (loginContainer) {
+            loginContainer.style.display = "none";
+        }
+        if (dashboardContainer) {
+            dashboardContainer.style.display = "flex";
+        }
+
+        return true;
     }
 
     // Initialiser les données
@@ -114,24 +121,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Écouteur pour le bouton de déconnexion
         document.getElementById("logoutBtn").addEventListener("click", function() {
-            localStorage.setItem("isLoggedIn", "false");
-            window.location.href = "index.html";
+            if (typeof Auth !== "undefined") {
+                Auth.logout();
+            } else {
+                window.location.href = "login.html";
+            }
         });
 
         // Écouteur pour le formulaire de connexion
-        document.getElementById("loginForm").addEventListener("submit", function(e) {
+        const loginForm = document.getElementById("loginForm");
+        if (loginForm) {
+            loginForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             const email = document.getElementById("loginEmail").value;
             const password = document.getElementById("loginPassword").value;
+            try {
             
             // Vérification simple (à remplacer par une vérification réelle)
-            if (email === "admin@example.com" && password === "password") {
-                localStorage.setItem("isLoggedIn", "true");
-                checkLoginStatus();
-            } else {
-                alert("Email ou mot de passe incorrect!");
+            await Auth.login(email, password, false);
+            checkLoginStatus();
+            } catch (error) {
+                alert(error.message || "Email ou mot de passe incorrect!");
             }
-        });
+            });
+        }
 
         // Écouteur pour le bouton de toggle de la sidebar
         document.getElementById("sidebarToggle").addEventListener("click", function() {

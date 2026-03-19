@@ -1,0 +1,40 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/postgres?currentSchema=public}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database: POSTGRESQL
+    hibernate:
+      ddl-auto: validate
+  h2:
+    console:
+      enabled: false
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  seed:
+    local-h2:
+      enabled: false
+  security:
+    bootstrap-admin:
+      enabled: ${APP_BOOTSTRAP_ADMIN_ENABLED:false}
+      name: ${APP_ADMIN_NAME:Production Admin}
+      email: ${APP_ADMIN_EMAIL:admin@example.com}
+      password: ${APP_ADMIN_PASSWORD:}
+    bootstrap-recognition-client:
+      enabled: ${APP_BOOTSTRAP_RECOGNITION_CLIENT_ENABLED:false}
+      name: ${APP_RECOGNITION_CLIENT_NAME:Face Recognition Client}
+      email: ${APP_RECOGNITION_CLIENT_EMAIL:face-client@example.com}
+      password: ${APP_RECOGNITION_CLIENT_PASSWORD:}
+    surface:
+      expose-h2-console-without-auth: false
+      expose-swagger-without-auth: false

@@ -29,6 +29,7 @@ public class PresenceJour {
 
     private LocalTime firstIn;
     private LocalTime breakTime;
+    private LocalTime resumeTime;
     private LocalTime lastOut;
     private Duration totalHeures;
 

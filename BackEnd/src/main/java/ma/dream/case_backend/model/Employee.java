@@ -4,8 +4,10 @@ package ma.dream.case_backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 import ma.dream.case_backend.enums.StatutEmploye;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,6 +32,9 @@ public class Employee {
     private String email;
     private String genre;
     private String adresse;
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(columnDefinition = "TEXT")
+    private String photo;
 
     @Enumerated(EnumType.STRING)
     private StatutEmploye statut;

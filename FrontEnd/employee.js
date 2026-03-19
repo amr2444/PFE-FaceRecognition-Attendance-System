@@ -4,9 +4,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== VARIABLES =====
     let currentPage = 1;
+    let totalPages = 1;
     let rowsPerPage = 10;
     let currentEmployeeId = null;
     const API_BASE_URL = 'http://localhost:8080/employes';
+    const DEFAULT_AVATAR_URL = (name) =>
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'Employe')}&background=random`;
 
     // ===== ÉLÉMENTS DOM =====
     const employeesTableBody = document.getElementById('employeesTableBody');
@@ -59,10 +62,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Erreur lors du filtrage des employés');
             }
             const data = await response.json();
+            totalPages = Math.max(data.totalPages || 0, 1);
+
+            if (data.totalPages > 0 && currentPage > data.totalPages) {
+                currentPage = data.totalPages;
+                return filterEmployees();
+            }
             
             // Mettre à jour le tableau
-            updateEmployeesTable(data.content);
-            updatePagination(data.totalElements);
+            updateEmployeesTable(data.content || []);
+            updatePagination(data.totalPages || 0);
         } catch (error) {
             console.error('Erreur:', error);
             employeesTableBody.innerHTML = `
@@ -76,6 +85,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateEmployeesTable(employees) {
+        if (!employees.length) {
+            employeesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="10">Aucun employe trouve.</td>
+                </tr>
+            `;
+            return;
+        }
+
         const rows = employees.map(employee => `
             <tr>
                 <td>${employee.nom}</td>
@@ -116,8 +134,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return '';
     }
 
-    function updatePagination(totalItems) {
-        const totalPages = Math.ceil(totalItems / rowsPerPage);
+    function getEmployeePhotoUrl(employee) {
+        if (employee && employee.photo && employee.photo.startsWith('data:image')) {
+            return employee.photo;
+        }
+
+        return DEFAULT_AVATAR_URL(employee?.nom || 'Employe');
+    }
+
+    function updatePagination(apiTotalPages) {
+        totalPages = Math.max(apiTotalPages || 0, 1);
         pageNumbers.textContent = `${currentPage} / ${totalPages}`;
         
         prevPageBtn.disabled = currentPage === 1;
@@ -139,15 +165,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function goToNextPage() {
         // On ne connaît pas le total de pages sans requête, donc on suppose qu'il y a une page suivante
-        currentPage++;
-        filterEmployees();
+        if (currentPage < totalPages) {
+            currentPage++;
+            filterEmployees();
+        }
     }
 
     // ===== GESTION DES ÉVÉNEMENTS =====
+    function resetAndFilterEmployees() {
+        currentPage = 1;
+        filterEmployees();
+    }
+
     function setupEventListeners() {
-        if (employeeSearch) employeeSearch.addEventListener('input', debounce(filterEmployees, 300));
-        if (departmentFilter) departmentFilter.addEventListener('change', filterEmployees);
-        if (statusFilter) statusFilter.addEventListener('change', filterEmployees);
+        if (employeeSearch) employeeSearch.addEventListener('input', debounce(resetAndFilterEmployees, 300));
+        if (departmentFilter) departmentFilter.addEventListener('change', resetAndFilterEmployees);
+        if (statusFilter) statusFilter.addEventListener('change', resetAndFilterEmployees);
         
         if (addEmployeeBtn) addEmployeeBtn.addEventListener('click', openAddEmployeeModal);
         if (closeModal) closeModal.addEventListener('click', closeEmployeeModal);
@@ -182,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         employeeForm.reset();
         photoDataInput.value = '';
         currentEmployeeId = null;
-        photoPreview.src = 'https://ui-avatars.com/api/?name=Nouvel+Employé&background=random';
+        photoPreview.src = DEFAULT_AVATAR_URL('Nouvel Employe');
         employeeModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
     }
@@ -300,8 +333,8 @@ document.addEventListener('DOMContentLoaded', function() {
             email: document.getElementById('email').value,
             genre: document.getElementById('gender').value,
             adresse: document.getElementById('address').value,
-            statut: document.getElementById('status').value,
-            photo: photoDataInput.value || null
+            photo: photoDataInput.value || null,
+            statut: document.getElementById('status').value
         };
         
         try {
@@ -390,7 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('status').value = employee.statut;
             
             photoDataInput.value = employee.photo || '';
-            photoPreview.src = employee.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.nom)}&background=random`;
+            photoPreview.src = getEmployeePhotoUrl(employee);
             
             currentEmployeeId = employee.employeeId;
             employeeModal.style.display = 'block';
@@ -413,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
             statusBadge.textContent = employee.statut;
             statusBadge.className = 'status-badge ' + getStatusClass(employee.statut);
             
-            document.getElementById('viewPhoto').src = employee.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.nom)}&background=random`;
+            document.getElementById('viewPhoto').src = getEmployeePhotoUrl(employee);
             document.getElementById('viewGender').textContent = employee.genre;
             document.getElementById('viewMobile').textContent = employee.mobile;
             document.getElementById('viewEmail').textContent = employee.email;

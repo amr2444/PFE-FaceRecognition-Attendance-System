@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.dream.case_backend.config.Messages;
 import ma.dream.case_backend.dto.UserAppDto;
+import ma.dream.case_backend.enums.ApiErrorCode;
+import ma.dream.case_backend.enums.UserRole;
 import ma.dream.case_backend.exceptions.TechnicalException;
 import ma.dream.case_backend.mapper.UserAppMapper;
 import ma.dream.case_backend.model.UserApp;
@@ -19,6 +21,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,15 +38,27 @@ public class UserAppService {
     private final UserAppMapper userAppMapper;
     private final EntityManager entityManager;
     private final Messages messages;
+    private final PasswordEncoder passwordEncoder;
 
 
-    public UserApp createUserApp(UserAppDto userAppDto) {
+    public UserAppDto createUserApp(UserAppDto userAppDto) throws TechnicalException {
+        if (userAppRepository.existsByEmailIgnoreCase(userAppDto.getEmail())) {
+            throw new TechnicalException(HttpStatus.CONFLICT, ApiErrorCode.DUPLICATE_RESOURCE, "User with this email already exists");
+        }
+        if (userAppDto.getPassword() == null || userAppDto.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+
         UserApp userApp = userAppMapper.toUserApp(userAppDto);
+        userApp.setEmail(userAppDto.getEmail().trim().toLowerCase());
+        userApp.setPasswordHash(passwordEncoder.encode(userAppDto.getPassword()));
+        userApp.setRole(userAppDto.getRole() != null ? userAppDto.getRole() : UserRole.ADMIN);
+        userApp.setActive(userAppDto.getActive() == null || userAppDto.getActive());
 
         userApp.setCreationDate(LocalDateTime.now());
         userApp.setLastUpdateDate(LocalDateTime.now());
 
-        return userAppRepository.save(userApp);
+        return userAppMapper.toUserAppDto(userAppRepository.save(userApp));
     }
 
     public Page<UserAppDto> getAllUserApps(int page, int size, String searchByName, String searchByEmail) {
@@ -103,7 +119,13 @@ public class UserAppService {
                 .orElseThrow(() -> new TechnicalException(messages.get(GlobalConstants.CASE_NOT_FOUND)));
 
         userApp.setName(userAppDto.getName());
-        userApp.setEmail(userAppDto.getEmail());
+        userApp.setEmail(userAppDto.getEmail().trim().toLowerCase());
+        userApp.setRole(userAppDto.getRole());
+        userApp.setActive(userAppDto.getActive() == null || userAppDto.getActive());
+
+        if (userAppDto.getPassword() != null && !userAppDto.getPassword().isBlank()) {
+            userApp.setPasswordHash(passwordEncoder.encode(userAppDto.getPassword()));
+        }
 
         userApp.setLastUpdateDate(LocalDateTime.now(ZoneOffset.UTC));
         log.debug("End service update UserApp  with id {}, UserApp {}", id, userAppDto);

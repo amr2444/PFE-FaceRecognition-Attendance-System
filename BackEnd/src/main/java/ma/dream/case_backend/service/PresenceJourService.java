@@ -46,24 +46,17 @@ public class PresenceJourService {
     private final Messages messages;
 
 
-    public PresenceJour createPresenceJour(PresenceJourDto presenceJourDto) {
+    public PresenceJourDto createPresenceJour(PresenceJourDto presenceJourDto) {
         PresenceJour presenceJour = presenceJourMapper.toPresenceJour(presenceJourDto);
 
-        if (presenceJour.getFirstIn() != null && presenceJour.getLastOut() != null) {
-            Duration dureeTravail = Duration.between(presenceJour.getFirstIn(), presenceJour.getLastOut());
-
-            Duration pause = presenceJour.getBreakTime() != null ? Duration.ofHours(1) : Duration.ZERO;
-
-            Duration total = dureeTravail.minus(pause);
-            presenceJour.setTotalHeures(total);
-        } else {
-            presenceJour.setTotalHeures(Duration.ZERO);
-        }
+        validatePresenceJourTimes(presenceJour);
+        applyPresenceStateRules(presenceJour);
+        presenceJour.setTotalHeures(calculateWorkedDuration(presenceJour));
 
         presenceJour.setCreationDate(LocalDateTime.now());
         presenceJour.setLastUpdateDate(LocalDateTime.now());
 
-        return presenceJourRepository.save(presenceJour);
+        return presenceJourMapper.toPresenceJourDto(presenceJourRepository.save(presenceJour));
     }
 
     public Page<PresenceJourDto> getAllPresenceJour(int page, int size, String searchByNom, String searchByStatus, String searchByShift, String sortBy, String direction) {
@@ -150,22 +143,16 @@ public class PresenceJourService {
                 .orElseThrow(() -> new TechnicalException(messages.get(GlobalConstants.CASE_NOT_FOUND)));
 
         presenceJour.setBreakTime(presenceJourDto.getBreakTime());
+        presenceJour.setResumeTime(presenceJourDto.getResumeTime());
         presenceJour.setLastOut(presenceJourDto.getLastOut());
         presenceJour.setFirstIn(presenceJourDto.getFirstIn());
         presenceJour.setNote(presenceJourDto.getNote());
         presenceJour.setShift(presenceJourDto.getShift());
         presenceJour.setStatut(presenceJourDto.getStatut());
 
-        if (presenceJour.getFirstIn() != null && presenceJour.getLastOut() != null) {
-            Duration dureeTravail = Duration.between(presenceJour.getFirstIn(), presenceJour.getLastOut());
-
-            Duration pause = presenceJour.getBreakTime() != null ? Duration.ofHours(1) : Duration.ZERO;
-
-            Duration total = dureeTravail.minus(pause);
-            presenceJour.setTotalHeures(total);
-        } else {
-            presenceJour.setTotalHeures(Duration.ZERO);
-        }
+        validatePresenceJourTimes(presenceJour);
+        applyPresenceStateRules(presenceJour);
+        presenceJour.setTotalHeures(calculateWorkedDuration(presenceJour));
 
         presenceJour.setLastUpdateDate(LocalDateTime.now(ZoneOffset.UTC));
         log.debug("End service update employee  with id {}, employee {}", id, presenceJourDto);
@@ -247,7 +234,7 @@ public class PresenceJourService {
             Row headerRow = sheet.createRow(0);
             String[] headers = {
                     "ID", "Employee ID", "Employee Name", "First In",
-                    "Break Time", "Last Out", "Total Hours",
+                    "Break Time", "Resume Time", "Last Out", "Total Hours",
                     "Status", "Shift", "Note", "Creation Date", "Last Update"
             };
 
@@ -265,11 +252,12 @@ public class PresenceJourService {
                 row.createCell(2).setCellValue(dto.getEmployeeName() != null ? dto.getEmployeeName() : "");
                 row.createCell(3).setCellValue(dto.getFirstIn() != null ? dto.getFirstIn().toString() : "");
                 row.createCell(4).setCellValue(dto.getBreakTime() != null ? dto.getBreakTime().toString() : "");
-                row.createCell(5).setCellValue(dto.getLastOut() != null ? dto.getLastOut().toString() : "");
-                row.createCell(6).setCellValue(dto.getTotalHeures() != null ? formatDuration(dto.getTotalHeures()) : "");
-                row.createCell(7).setCellValue(dto.getStatut() != null ? dto.getStatut().name() : "");
-                row.createCell(8).setCellValue(dto.getShift() != null ? dto.getShift() : "");
-                row.createCell(9).setCellValue(dto.getNote() != null ? dto.getNote() : "");
+                row.createCell(5).setCellValue(dto.getResumeTime() != null ? dto.getResumeTime().toString() : "");
+                row.createCell(6).setCellValue(dto.getLastOut() != null ? dto.getLastOut().toString() : "");
+                row.createCell(7).setCellValue(dto.getTotalHeures() != null ? formatDuration(dto.getTotalHeures()) : "");
+                row.createCell(8).setCellValue(dto.getStatut() != null ? dto.getStatut().name() : "");
+                row.createCell(9).setCellValue(dto.getShift() != null ? dto.getShift() : "");
+                row.createCell(10).setCellValue(dto.getNote() != null ? dto.getNote() : "");
             }
 
             // Auto-size columns
@@ -287,7 +275,7 @@ public class PresenceJourService {
              PrintWriter writer = new PrintWriter(new OutputStreamWriter(out))) {
 
             // En-tête CSV
-            writer.println("ID,Employee ID,Employee Name,First In,Break Time,Last Out,Total Hours,Status,Shift,Note");
+            writer.println("ID,Employee ID,Employee Name,First In,Break Time,Resume Time,Last Out,Total Hours,Status,Shift,Note");
 
             // Données CSV
             for (PresenceJourDto dto : data) {
@@ -297,6 +285,7 @@ public class PresenceJourService {
                         escapeCsv(dto.getEmployeeName()),
                         dto.getFirstIn() != null ? dto.getFirstIn().toString() : "",
                         dto.getBreakTime() != null ? dto.getBreakTime().toString() : "",
+                        dto.getResumeTime() != null ? dto.getResumeTime().toString() : "",
                         dto.getLastOut() != null ? dto.getLastOut().toString() : "",
                         dto.getTotalHeures() != null ? formatDuration(dto.getTotalHeures()) : "",
                         dto.getStatut() != null ? dto.getStatut().name() : "",
@@ -326,6 +315,69 @@ public class PresenceJourService {
         long hours = duration.toHours();
         long minutes = duration.minusHours(hours).toMinutes();
         return String.format("%dh %02dm", hours, minutes);
+    }
+
+    private void validatePresenceJourTimes(PresenceJour presenceJour) {
+        if (presenceJour.getBreakTime() != null && presenceJour.getFirstIn() == null) {
+            throw new IllegalArgumentException("Break time requires firstIn");
+        }
+
+        if (presenceJour.getResumeTime() != null && presenceJour.getBreakTime() == null) {
+            throw new IllegalArgumentException("Resume time requires breakTime");
+        }
+
+        if (presenceJour.getBreakTime() != null && presenceJour.getBreakTime().isBefore(presenceJour.getFirstIn())) {
+            throw new IllegalArgumentException("Break time cannot be before firstIn");
+        }
+
+        if (presenceJour.getResumeTime() != null && presenceJour.getResumeTime().isBefore(presenceJour.getBreakTime())) {
+            throw new IllegalArgumentException("Resume time cannot be before breakTime");
+        }
+
+        if (presenceJour.getLastOut() != null && presenceJour.getFirstIn() != null && presenceJour.getLastOut().isBefore(presenceJour.getFirstIn())) {
+            throw new IllegalArgumentException("Last out cannot be before firstIn");
+        }
+
+        if (presenceJour.getLastOut() != null && presenceJour.getResumeTime() != null && presenceJour.getLastOut().isBefore(presenceJour.getResumeTime())) {
+            throw new IllegalArgumentException("Last out cannot be before resumeTime");
+        }
+
+        if (presenceJour.getLastOut() != null && presenceJour.getBreakTime() != null && presenceJour.getResumeTime() == null) {
+            throw new IllegalArgumentException("Resume time is required before lastOut when a break exists");
+        }
+    }
+
+    private void applyPresenceStateRules(PresenceJour presenceJour) {
+        if (presenceJour.getLastOut() != null) {
+            presenceJour.setStatut(StatutPresence.TERMINE);
+            return;
+        }
+
+        if (presenceJour.getBreakTime() != null && presenceJour.getResumeTime() == null) {
+            presenceJour.setStatut(StatutPresence.EN_PAUSE);
+            return;
+        }
+
+        if (presenceJour.getFirstIn() != null) {
+            presenceJour.setStatut(StatutPresence.PRESENT);
+            return;
+        }
+
+        presenceJour.setStatut(StatutPresence.ABSENT);
+    }
+
+    private Duration calculateWorkedDuration(PresenceJour presenceJour) {
+        if (presenceJour.getFirstIn() == null || presenceJour.getLastOut() == null) {
+            return Duration.ZERO;
+        }
+
+        Duration workedDuration = Duration.between(presenceJour.getFirstIn(), presenceJour.getLastOut());
+
+        if (presenceJour.getBreakTime() != null && presenceJour.getResumeTime() != null) {
+            workedDuration = workedDuration.minus(Duration.between(presenceJour.getBreakTime(), presenceJour.getResumeTime()));
+        }
+
+        return workedDuration.isNegative() ? Duration.ZERO : workedDuration;
     }
 
 
