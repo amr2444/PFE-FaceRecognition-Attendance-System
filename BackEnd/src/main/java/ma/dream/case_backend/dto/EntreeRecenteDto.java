@@ -15,6 +15,8 @@ public class EntreeRecenteDto {
 
     private Long entreeRecenteId;
     private Long employeeId;
+    private String employeeName;
+    private String employeePhoto;
     private LocalTime heure;
     private String portail;
     private LocalDate date;

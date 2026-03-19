@@ -395,3 +395,13 @@
     font-size: 16px;
     margin-bottom: 20px;
 }
+
+/* ===== PREMIUM SHEET OVERRIDES ===== */
+.section-hero { padding:26px; border-radius:28px; margin-bottom:20px; background:linear-gradient(135deg, rgba(15,106,67,.12), rgba(214,164,77,.12)); border:1px solid var(--border-color); }
+.section-kicker { display:inline-flex; margin-bottom:12px; padding:6px 12px; border-radius:999px; background:rgba(15,106,67,.1); color:var(--primary-color); font-size:.75rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.section-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(1.8rem,3vw,2.6rem); line-height:1.04; letter-spacing:-.05em; margin-bottom:12px; }
+.section-copy { color: var(--text-light); }
+.filter-section, .table-container, .export-options { border-radius:24px; border:1px solid var(--border-color); background:rgba(255,255,255,.7); }
+.filter-select, .search-btn, .export-btn { border-radius:14px; }
+.attendance-table thead th { background:rgba(15,106,67,.08); text-transform:uppercase; font-size:.76rem; letter-spacing:.08em; }
+.attendance-table tbody tr:hover { background-color:rgba(15,106,67,.04); }

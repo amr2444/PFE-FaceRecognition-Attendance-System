@@ -7,6 +7,10 @@ import face_recognition
 
 from python_app.backend_client import BackendClient, BackendClientError
 from python_app.config import ENCODE_FILE_PATH, IMAGES_DIR
+from python_app.logging_utils import get_logger
+
+
+LOGGER = get_logger("face_reco.encode_generator")
 
 
 def image_to_data_url(image):
@@ -27,12 +31,12 @@ def build_encoding(image):
 
 def main():
     if not os.path.isdir(IMAGES_DIR):
-        print(f"Dossier Images introuvable: {IMAGES_DIR}")
+        LOGGER.error("Dossier Images introuvable: %s", IMAGES_DIR)
         return 1
 
     backend_client = BackendClient()
     file_names = sorted(os.listdir(IMAGES_DIR))
-    print("Fichiers trouves dans Images/ :", file_names)
+    LOGGER.info("Fichiers trouves dans Images/: %s", file_names)
 
     encode_list_known = []
     employee_ids = []
@@ -44,35 +48,35 @@ def main():
 
         employee_id_text, _ = os.path.splitext(file_name)
         if not employee_id_text.isdigit():
-            print(f"Nom de fichier ignore (ID invalide) : {file_name}")
+            LOGGER.warning("Nom de fichier ignore (ID invalide): %s", file_name)
             continue
 
         employee_id = int(employee_id_text)
         image = cv2.imread(file_path)
         if image is None:
-            print(f"Impossible de charger {file_name}.")
+            LOGGER.warning("Impossible de charger %s.", file_name)
             continue
 
         face_encoding = build_encoding(image)
         if face_encoding is None:
-            print(f"Aucun visage detecte dans {file_name}.")
+            LOGGER.warning("Aucun visage detecte dans %s.", file_name)
             continue
 
         try:
             backend_client.get_employee(employee_id)
             backend_client.upload_employee_photo(employee_id, image_to_data_url(cv2.resize(image, (216, 216))))
         except (BackendClientError, ValueError) as exc:
-            print(f"Synchronisation backend impossible pour {file_name}: {exc}")
+            LOGGER.error("Synchronisation backend impossible pour %s: %s", file_name, exc)
             continue
 
         encode_list_known.append(face_encoding)
         employee_ids.append(employee_id)
-        print(f"Image synchronisee et encodage genere pour l'employe {employee_id}.")
+        LOGGER.info("Image synchronisee et encodage genere pour l'employe %s.", employee_id)
 
     with open(ENCODE_FILE_PATH, "wb") as file_obj:
         pickle.dump([encode_list_known, employee_ids], file_obj)
 
-    print(f"EncodeFile cree avec {len(employee_ids)} employe(s).")
+    LOGGER.info("EncodeFile cree avec %s employe(s).", len(employee_ids))
     return 0
 
 

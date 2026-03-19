@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let employees = [];
     let attendances = [];
     let selectedEmployeeId = null;
+    let selectedEmployee = null;
     let currentWeekStart = new Date();
     
     // Régler le début de la semaine au lundi
@@ -40,6 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setupEventListeners();
     displayCurrentDate();
     updateWeekDisplay();
+    hydrateFromQueryParams();
 
     // ===== FONCTIONS =====
 
@@ -65,44 +67,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Initialiser les données
     function initializeData() {
-        // Récupérer les employés depuis localStorage
-        const storedEmployees = localStorage.getItem("employees");
-        if (storedEmployees) {
-            employees = JSON.parse(storedEmployees);
-        } else {
-            // Générer des données d'exemple si aucun employé n'est trouvé
-            employees = generateSampleEmployees();
-            localStorage.setItem("employees", JSON.stringify(employees));
-        }
-
-        // Récupérer les présences depuis localStorage
-        const storedAttendances = localStorage.getItem("attendance");
-        if (storedAttendances) {
-            attendances = JSON.parse(storedAttendances);
-        }
+        employees = [];
+        attendances = [];
     }
 
-    // Générer des données d'exemple pour les employés
-    function generateSampleEmployees() {
-        const departments = ["IT", "RH", "Finance", "Marketing", "Production"];
-        const joiningDates = [
-            "01/01/2020", "15/03/2020", "10/06/2020", "22/09/2020", "05/12/2020",
-            "18/02/2021", "30/04/2021", "12/07/2021", "25/10/2021", "08/01/2022"
-        ];
-
-        return [
-            { id: 1, name: "Ahmed Benali", department: "IT", joiningDate: "01/01/2020", photo: "https://randomuser.me/api/portraits/men/1.jpg" },
-            { id: 2, name: "Fatima Zahra", department: "RH", joiningDate: "15/03/2020", photo: "https://randomuser.me/api/portraits/women/1.jpg" },
-            { id: 3, name: "Karim Idrissi", department: "Finance", joiningDate: "10/06/2020", photo: "https://randomuser.me/api/portraits/men/2.jpg" },
-            { id: 4, name: "Nadia Mansouri", department: "Marketing", joiningDate: "22/09/2020", photo: "https://randomuser.me/api/portraits/women/2.jpg" },
-            { id: 5, name: "Omar Tazi", department: "Production", joiningDate: "05/12/2020", photo: "https://randomuser.me/api/portraits/men/3.jpg" },
-            { id: 6, name: "Samira Alaoui", department: "IT", joiningDate: "18/02/2021", photo: "https://randomuser.me/api/portraits/women/3.jpg" },
-            { id: 7, name: "Youssef Benjelloun", department: "RH", joiningDate: "30/04/2021", photo: "https://randomuser.me/api/portraits/men/4.jpg" },
-            { id: 8, name: "Leila Haddad", department: "Finance", joiningDate: "12/07/2021", photo: "https://randomuser.me/api/portraits/women/4.jpg" },
-            { id: 9, name: "Rachid Moussaoui", department: "Marketing", joiningDate: "25/10/2021", photo: "https://randomuser.me/api/portraits/men/5.jpg" },
-            { id: 10, name: "Amina Berrada", department: "Production", joiningDate: "08/01/2022", photo: "https://randomuser.me/api/portraits/women/5.jpg" },
-            { id: 11, name: "Hassan Ouazzani", department: "IT", joiningDate: "20/03/2022", photo: "https://randomuser.me/api/portraits/men/6.jpg" }
-        ];
+    function hydrateFromQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        const employeeQuery = params.get('employee');
+        if (employeeQuery) {
+            employeeSearchInput.value = employeeQuery;
+            searchEmployee();
+        }
     }
 
     // Configurer les écouteurs d'événements
@@ -136,12 +111,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const email = document.getElementById("loginEmail").value;
             const password = document.getElementById("loginPassword").value;
             try {
-            
-            // Vérification simple (à remplacer par une vérification réelle)
             await Auth.login(email, password, false);
             checkLoginStatus();
             } catch (error) {
-                alert(error.message || "Email ou mot de passe incorrect!");
+                AppUI.notify(error.message || "Email ou mot de passe incorrect!", 'error');
             }
             });
         }
@@ -161,40 +134,50 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Rechercher un employé
-    function searchEmployee() {
+    async function searchEmployee() {
         const searchTerm = employeeSearchInput.value.toLowerCase().trim();
         
         if (!searchTerm) {
-            alert("Veuillez entrer un nom d'employé à rechercher.");
+            AppUI.notify("Veuillez entrer un nom d'employe a rechercher.", 'warning');
             return;
         }
-        
-        // Rechercher l'employé par nom
-        const foundEmployee = employees.find(emp => 
-            emp.name.toLowerCase().includes(searchTerm)
-        );
-        
-        if (foundEmployee) {
-            selectedEmployeeId = foundEmployee.id;
-            displayEmployeeInfo(foundEmployee);
-            calculateEmployeeStats(foundEmployee.id);
-            displayEmployeeAttendance(foundEmployee.id);
+        try {
+            const employeePage = await AppApi.get(`/employes/?page=0&size=20&searchByNom=${encodeURIComponent(searchTerm)}`, "Impossible de rechercher l'employe.");
+            const foundEmployee = (employeePage.content || [])[0];
+
+            if (foundEmployee) {
+                selectedEmployeeId = foundEmployee.employeeId;
+                selectedEmployee = foundEmployee;
+                employees = employeePage.content || [];
+                attendances = await fetchEmployeeAttendances(foundEmployee.nom);
+                displayEmployeeInfo(foundEmployee);
+                calculateEmployeeStats(foundEmployee.employeeId);
+                displayEmployeeAttendance(foundEmployee.employeeId);
             
-            // Afficher la section d'informations et masquer le message
-            employeeInfoSection.classList.remove('hidden');
-            noEmployeeMessage.classList.add('hidden');
-        } else {
-            alert("Aucun employé trouvé avec ce nom.");
+                employeeInfoSection.classList.remove('hidden');
+                noEmployeeMessage.classList.add('hidden');
+            } else {
+                AppUI.notify("Aucun employe trouve avec ce nom.", 'warning');
+                employeeInfoSection.classList.add('hidden');
+                noEmployeeMessage.classList.remove('hidden');
+            }
+        } catch (error) {
+            AppUI.notify(error.message || "Impossible de rechercher l'employe.", 'error');
         }
+    }
+
+    async function fetchEmployeeAttendances(employeeName) {
+        const data = await AppApi.get(`/presences/?page=0&size=200&searchByNom=${encodeURIComponent(employeeName)}`, 'Impossible de charger les presences de l\'employe.');
+        return data.content || [];
     }
 
     // Afficher les informations de l'employé
     function displayEmployeeInfo(employee) {
-        employeePhoto.src = employee.photo || 'https://via.placeholder.com/100';
-        employeeName.textContent = employee.name;
-        employeeDepartment.textContent = employee.department || 'Non spécifié';
-        employeeId.textContent = `EMP-${String(employee.id).padStart(3, '0')}`;
-        employeeJoiningDate.textContent = employee.joiningDate || 'Non spécifié';
+        employeePhoto.src = employee.photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(employee.nom || 'Employe');
+        employeeName.textContent = employee.nom;
+        employeeDepartment.textContent = employee.departement || 'Non specifie';
+        employeeId.textContent = `EMP-${String(employee.employeeId).padStart(3, '0')}`;
+        employeeJoiningDate.textContent = employee.dateEmbauche ? new Date(employee.dateEmbauche).toLocaleDateString('fr-FR') : 'Non specifie';
     }
 
     // Calculer les statistiques de l'employé
@@ -223,8 +206,8 @@ document.addEventListener("DOMContentLoaded", function () {
         
         employeeAttendances.forEach(att => {
             // Heures de travail
-            if (att.totalHours) {
-                const hoursMatch = att.totalHours.match(/(\d+)h(?:(\d+)m)?/);
+            if (att.totalHeures) {
+                const hoursMatch = formatDuration(att.totalHeures).match(/(\d+)h\s?(?:(\d+)m)?/);
                 if (hoursMatch) {
                     const hours = parseInt(hoursMatch[1]) || 0;
                     const minutes = parseInt(hoursMatch[2]) || 0;
@@ -248,8 +231,10 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             
             // Temps de pause (supposé être 1h par défaut)
-            if (att.breakTime) {
-                totalBreakMinutes += 60; // 1 heure de pause par défaut
+            if (att.breakTime && att.resumeTime) {
+                const [breakHours, breakMinutes] = att.breakTime.split(':').map(Number);
+                const [resumeHours, resumeMinutes] = att.resumeTime.split(':').map(Number);
+                totalBreakMinutes += ((resumeHours * 60 + resumeMinutes) - (breakHours * 60 + breakMinutes));
                 countWithBreakTime++;
             }
         });
@@ -336,9 +321,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const dateString = day.toISOString().split('T')[0];
             
             // Chercher la présence pour ce jour
-            const attendance = attendances.find(att => 
-                att.employeeId === employeeId && att.date === dateString
-            );
+            const attendance = attendances.find(att => {
+                const creationDate = att.creationDate ? new Date(att.creationDate) : null;
+                return att.employeeId === employeeId && creationDate && creationDate.toISOString().split('T')[0] === dateString;
+            });
             
             // Créer une ligne pour ce jour
             const row = document.createElement('tr');
@@ -355,16 +341,16 @@ document.addEventListener("DOMContentLoaded", function () {
             let statusText = 'Non enregistré';
             
             if (attendance) {
-                if (attendance.status === 'Présent') {
+                if (attendance.statut === 'PRESENT') {
                     statusClass = 'status-present';
                     statusText = 'Présent';
-                } else if (attendance.status === 'Absent') {
+                } else if (attendance.statut === 'ABSENT') {
                     statusClass = 'status-absent';
                     statusText = 'Absent';
-                } else if (attendance.status === 'En pause') {
+                } else if (attendance.statut === 'EN_PAUSE') {
                     statusClass = 'status-pause';
                     statusText = 'En pause';
-                } else if (attendance.status === 'Terminé') {
+                } else if (attendance.statut === 'TERMINE') {
                     statusClass = 'status-finished';
                     statusText = 'Terminé';
                 }
@@ -378,16 +364,18 @@ document.addEventListener("DOMContentLoaded", function () {
             row.innerHTML = `
                 <td>${formattedDate}</td>
                 <td>${attendance ? attendance.firstIn || '-' : '-'}</td>
+                <td>${attendance ? attendance.breakTime || '-' : '-'}</td>
+                <td>${attendance ? attendance.resumeTime || '-' : '-'}</td>
                 <td>${attendance ? attendance.lastOut || '-' : '-'}</td>
-                <td>${attendance ? attendance.totalHours || '0h' : '0h'}</td>
+                <td>${attendance ? formatDuration(attendance.totalHeures) || '0h' : '0h'}</td>
                 <td>${attendance ? attendance.shift || '-' : '-'}</td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 <td class="action-cell">
                     ${attendance ? `
-                        <button class="action-btn edit-btn" title="Modifier" onclick="editEmployeeAttendance(${attendance.id})">
+                        <button class="action-btn edit-btn" title="Modifier" onclick="editEmployeeAttendance(${attendance.presenceJourId})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="action-btn delete-btn" title="Supprimer" onclick="deleteEmployeeAttendance(${attendance.id})">
+                        <button class="action-btn delete-btn" title="Supprimer" onclick="deleteEmployeeAttendance(${attendance.presenceJourId})">
                             <i class="fas fa-trash"></i>
                         </button>
                     ` : `
@@ -410,19 +398,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Fonction pour supprimer une présence (sera appelée depuis le HTML)
     window.deleteEmployeeAttendance = function(attendanceId) {
-        if (confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement de présence ?")) {
-            // Supprimer la présence
-            attendances = attendances.filter(att => att.id !== attendanceId);
-            
-            // Sauvegarder dans localStorage
-            localStorage.setItem("attendance", JSON.stringify(attendances));
-            
-            // Mettre à jour l'affichage
-            if (selectedEmployeeId) {
-                calculateEmployeeStats(selectedEmployeeId);
-                displayEmployeeAttendance(selectedEmployeeId);
-            }
+        if (!confirm("Etes-vous sur de vouloir supprimer cet enregistrement de presence ?")) {
+            return;
         }
+
+        AppApi.delete(`/presences/${attendanceId}`, 'Impossible de supprimer cette presence.')
+            .then(async () => {
+                if (selectedEmployee) {
+                    attendances = await fetchEmployeeAttendances(selectedEmployee.nom);
+                }
+                if (selectedEmployeeId) {
+                    calculateEmployeeStats(selectedEmployeeId);
+                    displayEmployeeAttendance(selectedEmployeeId);
+                }
+                AppUI.notify('Presence supprimee avec succes.', 'success');
+            })
+            .catch(error => AppUI.notify(error.message || 'Impossible de supprimer cette presence.', 'error'));
     };
 
     // Fonction pour ajouter une présence (sera appelée depuis le HTML)
@@ -430,4 +421,14 @@ document.addEventListener("DOMContentLoaded", function () {
         // Rediriger vers la page de présence générale avec les paramètres pour ajouter
         window.location.href = `attendance.html?add=true&employeeId=${employeeId}&date=${date}`;
     };
+
+    function formatDuration(durationStr) {
+        if (!durationStr) return '0h';
+        const matches = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+        if (!matches) return '0h';
+
+        const hours = matches[1] ? parseInt(matches[1], 10) : 0;
+        const minutes = matches[2] ? parseInt(matches[2], 10) : 0;
+        return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
+    }
 });

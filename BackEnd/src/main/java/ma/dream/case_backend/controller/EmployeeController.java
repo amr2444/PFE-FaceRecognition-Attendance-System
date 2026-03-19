@@ -1,6 +1,11 @@
 package ma.dream.case_backend.controller;
 
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -10,6 +15,8 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ma.dream.case_backend.config.SwaggerConfig;
+import ma.dream.case_backend.dto.ApiErrorResponseDto;
 import ma.dream.case_backend.dto.EmployeeDto;
 import ma.dream.case_backend.dto.EmployeeStatutCountDto;
 import ma.dream.case_backend.exceptions.TechnicalException;
@@ -27,17 +34,30 @@ import java.util.List;
 @AllArgsConstructor
 @Slf4j
 @Validated
+@SecurityRequirement(name = SwaggerConfig.BEARER_SECURITY_SCHEME)
 public class EmployeeController {
 
     private final EmployeeService employeeService;
 
     @PostMapping("/")
+    @Operation(summary = "Create employee", description = "Creates a new employee")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Employee created"),
+            @ApiResponse(responseCode = "400", description = "Invalid employee payload", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "403", description = "Access denied", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     public ResponseEntity<EmployeeDto> createEmployee(@Valid @RequestBody EmployeeDto employeeDto) {
         EmployeeDto createdEmployee = employeeService.createEmployee(employeeDto);
         return new ResponseEntity<>(createdEmployee, HttpStatus.CREATED);
     }
 
     @Operation(summary = "Retrieve all employees", description = "Récupère la liste de tous les employees")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Employees returned"),
+            @ApiResponse(responseCode = "400", description = "Invalid query parameters", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @GetMapping("/")
     public ResponseEntity<Page<EmployeeDto>> getAllEmployees(
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page must be greater than or equal to 0") int page,
@@ -53,6 +73,10 @@ public class EmployeeController {
     }
 
     @Operation(summary = "Retrieve all employees", description = "Récupère la liste de tous les employés")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Employees returned"),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @GetMapping("/find/all")
     public ResponseEntity<List<EmployeeDto>> findAllEmployees() {
         List<EmployeeDto> employees = employeeService.findAllEmployees();
@@ -62,6 +86,11 @@ public class EmployeeController {
 
 
     @Operation(summary = "Update employee details", description = "Récupère les détails d'un employee par ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Employee updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid payload or ID", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "Employee not found", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @PutMapping("/{id}")
     public ResponseEntity<EmployeeDto> updateEmployee(@PathVariable @Positive(message = "id must be positive") Long id, @Valid @RequestBody EmployeeDto employeeDto) throws TechnicalException {
         log.info("Update employee: {}", id);
@@ -70,6 +99,11 @@ public class EmployeeController {
     }
 
     @Operation(summary = "Retrieve employee by ID", description = "Récupère les détails d'un employee par ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Employee returned"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "Employee not found", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @GetMapping("/{id}")
     public ResponseEntity<EmployeeDto> getEmployeeById(@PathVariable @Positive(message = "id must be positive") Long id) throws TechnicalException {
         log.info("get employee by id: {}", id);
@@ -77,6 +111,11 @@ public class EmployeeController {
     }
 
     @Operation(summary = "Delete a employee", description = "Supprime un employee par ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Employee deleted"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "Employee not found", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEmployee(@PathVariable @Positive(message = "id must be positive") Long id) throws TechnicalException {
         log.info("delete employee by id: {}", id);

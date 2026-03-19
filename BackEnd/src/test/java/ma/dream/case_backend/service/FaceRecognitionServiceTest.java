@@ -6,6 +6,7 @@ import ma.dream.case_backend.enums.RecognitionEventType;
 import ma.dream.case_backend.enums.StatutEmploye;
 import ma.dream.case_backend.enums.StatutPresence;
 import ma.dream.case_backend.exceptions.TechnicalException;
+import ma.dream.case_backend.mapper.EntreeRecenteMapper;
 import ma.dream.case_backend.model.Employee;
 import ma.dream.case_backend.model.EntreeRecente;
 import ma.dream.case_backend.model.PresenceJour;
@@ -50,6 +51,9 @@ class FaceRecognitionServiceTest {
     @Mock
     private EmployeeService employeeService;
 
+    @Mock
+    private EntreeRecenteMapper entreeRecenteMapper;
+
     private FaceRecognitionService faceRecognitionService;
 
     @BeforeEach
@@ -58,6 +62,7 @@ class FaceRecognitionServiceTest {
                 employeRepository,
                 presenceJourRepository,
                 entreeRecenteRepository,
+                entreeRecenteMapper,
                 employeeService
         );
     }

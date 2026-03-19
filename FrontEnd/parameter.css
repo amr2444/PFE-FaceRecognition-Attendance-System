@@ -4,6 +4,7 @@
     --secondary-color: #f39c12;
     --danger-color: #e74c3c;
     --success-color: #2ecc71;
+    --settings-page-bg: #f3ebdd;
     
     /* Light Theme */
     --bg-color: #f5f6fa;
@@ -21,11 +22,29 @@
     --sidebar-bg: #1e1e1e;
     --menu-hover: #333;
     --border-color: var(--text-light);
+    --settings-page-bg: #1a1a1a;
 }
 
 /* Settings Page Specific */
+body:not(.dark-theme) {
+    background: var(--settings-page-bg);
+}
+
+html[data-theme="light"] #mainContent,
+html[data-theme="light"] .main-content,
+html[data-theme="light"] .header,
+html[data-theme="light"] .settings-content,
+body:not(.dark-theme) #mainContent,
+body:not(.dark-theme) .main-content,
+body:not(.dark-theme) .header,
+body:not(.dark-theme) .settings-content {
+    background: var(--settings-page-bg) !important;
+}
+
 .settings-content {
     padding: 20px;
+    background: var(--settings-page-bg);
+    min-height: calc(100vh - 78px);
 }
 
 .settings-card {
@@ -388,4 +407,20 @@ input:checked + .slider:before {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== PREMIUM SETTINGS OVERRIDES ===== */
+.section-hero { padding:26px; border-radius:28px; margin-bottom:20px; background:linear-gradient(135deg, rgba(15,106,67,.12), rgba(214,164,77,.12)); border:1px solid var(--border-color); }
+.section-kicker { display:inline-flex; margin-bottom:12px; padding:6px 12px; border-radius:999px; background:rgba(15,106,67,.1); color:var(--primary-color); font-size:.75rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.section-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(1.8rem,3vw,2.6rem); line-height:1.04; letter-spacing:-.05em; margin-bottom:12px; }
+.section-copy { color: var(--text-light); }
+.settings-card { border-radius:24px; border:1px solid var(--border-color); background:rgba(255,255,255,.7); box-shadow:var(--shadow); }
+.settings-card h2 { font-family:'Space Grotesk',sans-serif; }
+.theme-option, .change-password-btn, .input-group input { border-radius:14px; }
+.change-password-btn { background:linear-gradient(135deg, var(--primary-color), var(--primary-dark)); }
+
+body.compact-tables table th,
+body.compact-tables table td {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
 }

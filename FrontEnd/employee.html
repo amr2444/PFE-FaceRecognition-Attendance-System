@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Employés | Dashboard Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="sidebar.css">
     <link rel="stylesheet" href="styles.css">
@@ -24,7 +27,7 @@
                 <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
                 <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
                 <li class="dropdown">
-                    <a href="#" class="dropdown-btn">
+                    <a href="attendance.html" class="dropdown-btn">
                       <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
                       <i class="fas fa-caret-down dropdown-icon"></i>
                     </a>
@@ -53,14 +56,14 @@
                   <div class="user-profile">
                     <img src="1.jpg" alt="Admin" />
                     <div class="user-info">
-                      <span class="user-name">AMR</span>
-                      <span class="user-role">ADMIN</span>
+                      <span class="user-name" data-auth-name>System Admin</span>
+                      <span class="user-role" data-auth-role>ADMIN</span>
                     </div>
               
                     <!-- Formulaire au survol -->
                     <div class="user-popup">
-                      <p><strong>Nom :</strong> AMR</p>
-                      <p><strong>Statut :</strong> ADMIN</p>
+                      <p><strong>Nom :</strong> <span data-auth-name>System Admin</span></p>
+                      <p><strong>Statut :</strong> <span data-auth-role>ADMIN</span></p>
                     </div>
                   </div>
                 </div>
@@ -68,6 +71,24 @@
 
             <!-- Employees Content -->
             <div class="content">
+                <section class="section-hero employees-hero">
+                    <div>
+                        <span class="section-kicker">People operations</span>
+                        <h1 class="section-title">Pilotez vos employes avec une vue claire, rapide et actionnable.</h1>
+                        <p class="section-copy">Retrouvez les profils, les statuts, les contacts et les photos depuis un espace concu pour les operations RH et terrain.</p>
+                    </div>
+                    <div class="section-meta-grid">
+                        <div class="section-meta-card">
+                            <span>Vue</span>
+                            <strong>Catalogue vivant</strong>
+                        </div>
+                        <div class="section-meta-card">
+                            <span>Controle</span>
+                            <strong>Edition instantanee</strong>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Action Bar -->
                 <div class="action-bar">
                     <div class="search-container">

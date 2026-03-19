@@ -231,6 +231,15 @@ Reponse type:
 
 Authentifie un utilisateur et retourne un token Bearer.
 
+Exemple:
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "change-me"
+}
+```
+
 Erreurs frequentes:
 - `REQUEST_VALIDATION_FAILED`
 - `REQUEST_BODY_INVALID`
@@ -239,6 +248,15 @@ Erreurs frequentes:
 ### `POST /auth/change-password`
 
 Change le mot de passe de l'utilisateur authentifie.
+
+Exemple:
+
+```json
+{
+  "currentPassword": "old-password",
+  "newPassword": "N3wP@ssword!"
+}
+```
 
 Erreurs frequentes:
 - `AUTHENTICATION_REQUIRED`
@@ -249,6 +267,18 @@ Erreurs frequentes:
 ### `POST /users/`
 
 Cree un utilisateur applicatif.
+
+Exemple:
+
+```json
+{
+  "name": "Recognition Client",
+  "email": "reco-client@example.com",
+  "password": "ChangeMe123!",
+  "role": "RECOGNITION_CLIENT",
+  "active": true
+}
+```
 
 Erreurs frequentes:
 - `REQUEST_VALIDATION_FAILED`

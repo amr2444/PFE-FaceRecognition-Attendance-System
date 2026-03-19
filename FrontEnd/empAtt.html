@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Présence par Employé | Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="icon" href="logoCAF.png" type="image/png">
     <link rel="stylesheet" href="sidebar.css">
     <link rel="stylesheet" href="styles.css">
@@ -36,14 +39,14 @@
                 <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
                 <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
                 <li class="dropdown">
-                    <a href="#" class="dropdown-btn">
+                    <a href="attendance.html" class="dropdown-btn">
                       <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
                       <i class="fas fa-caret-down dropdown-icon"></i>
                     </a>
                     <ul class="submenu">
                       <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Présence des employés</a></li>
-                      <li><a href="empAtt.html"><i class="fas fa-user-clock"></i> Présence par employé</a></li>
-                      <li><a href="prsheet.html" class="active"><i class="fas fa-calendar-alt"></i> Feuille de Présence</a></li>
+                      <li><a href="empAtt.html" class="active"><i class="fas fa-user-clock"></i> Présence par employé</a></li>
+                      <li><a href="prsheet.html"><i class="fas fa-calendar-alt"></i> Feuille de Présence</a></li>
                     </ul>
                 </li>
                 <li><a href="parameter.html"><i class="fas fa-cog"></i> <span class="menu-text">Settings</span></a></li>
@@ -66,13 +69,13 @@
                     <div class="user-profile">
                         <img src="1.jpg" alt="Admin" />
                         <div class="user-info">
-                            <span class="user-name">AMR</span>
-                            <span class="user-role">ADMIN</span>
+                            <span class="user-name" data-auth-name>System Admin</span>
+                            <span class="user-role" data-auth-role>ADMIN</span>
                         </div>
                         <!-- Formulaire au survol -->
                         <div class="user-popup">
-                            <p><strong>Nom :</strong> AMR</p>
-                            <p><strong>Statut :</strong> ADMIN</p>
+                            <p><strong>Nom :</strong> <span data-auth-name>System Admin</span></p>
+                            <p><strong>Statut :</strong> <span data-auth-role>ADMIN</span></p>
                         </div>
                     </div>
                 </div>
@@ -80,6 +83,23 @@
 
             <!-- Content -->
             <div class="content">
+                <section class="section-hero employee-attendance-hero">
+                    <div>
+                        <span class="section-kicker">Individual tracking</span>
+                        <h1 class="section-title">Explorez la trajectoire hebdomadaire de chaque employe.</h1>
+                        <p class="section-copy">Recherchez un collaborateur, analysez ses heures moyennes, ses entrees, ses sorties et ses jours critiques sans quitter le tableau.</p>
+                    </div>
+                    <div class="section-meta-grid">
+                        <div class="section-meta-card">
+                            <span>Focus</span>
+                            <strong>Statistiques individuelles</strong>
+                        </div>
+                        <div class="section-meta-card">
+                            <span>Horizon</span>
+                            <strong>Lecture semaine par semaine</strong>
+                        </div>
+                    </div>
+                </section>
                 <!-- Employee Search Section -->
                 <div class="employee-search-section">
                     <div class="search-container">
@@ -172,6 +192,8 @@
                                 <tr>
                                     <th>Date</th>
                                     <th>Check In</th>
+                                    <th>Break</th>
+                                    <th>Resume</th>
                                     <th>Check Out</th>
                                     <th>Heures de travail</th>
                                     <th>Shift</th>

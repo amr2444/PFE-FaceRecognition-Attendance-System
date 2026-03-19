@@ -1,8 +1,18 @@
 import json
+import socket
+import time
 import urllib.error
 import urllib.request
 
-from python_app.config import API_BASE_URL, API_EMAIL, API_PASSWORD, API_TIMEOUT_SECONDS
+from python_app.config import (
+    API_BASE_URL,
+    API_EMAIL,
+    API_PASSWORD,
+    API_RETRY_BACKOFF_SECONDS,
+    API_RETRY_COUNT,
+    API_TIMEOUT_SECONDS,
+)
+from python_app.logging_utils import get_logger
 
 
 class BackendClientError(Exception):
@@ -11,10 +21,13 @@ class BackendClientError(Exception):
 
 class BackendClient:
     def __init__(self, base_url=None, timeout=None, auth_email=None, auth_password=None):
+        self.logger = get_logger(self.__class__.__name__)
         self.base_url = (base_url or API_BASE_URL).rstrip("/")
         self.timeout = timeout or API_TIMEOUT_SECONDS
         self.auth_email = auth_email or API_EMAIL
         self.auth_password = auth_password or API_PASSWORD
+        self.retry_count = API_RETRY_COUNT
+        self.retry_backoff_seconds = API_RETRY_BACKOFF_SECONDS
         self._access_token = None
 
     def get_active_face_employees(self):
@@ -59,10 +72,48 @@ class BackendClient:
             raise BackendClientError("Le backend n'a pas retourne de jeton JWT.")
 
         self._access_token = token
+        self.logger.info("Authenticated backend client for %s", self.auth_email)
         return token
 
     def _request(self, path, method="GET", payload=None, expect_json=True, include_auth=True, retry_on_unauthorized=True):
         url = f"{self.base_url}{path}"
+        last_error = None
+
+        for attempt in range(self.retry_count + 1):
+            try:
+                return self._send_request(
+                    url,
+                    path,
+                    method=method,
+                    payload=payload,
+                    expect_json=expect_json,
+                    include_auth=include_auth,
+                    retry_on_unauthorized=retry_on_unauthorized,
+                )
+            except BackendClientError as exc:
+                last_error = exc
+                should_retry = attempt < self.retry_count and self._is_retryable_error(exc)
+                if not should_retry:
+                    raise
+
+                wait_seconds = self.retry_backoff_seconds * (attempt + 1)
+                self.logger.warning(
+                    "Backend request failed on %s %s (attempt %s/%s): %s. Retry in %.1fs",
+                    method,
+                    path,
+                    attempt + 1,
+                    self.retry_count + 1,
+                    exc,
+                    wait_seconds,
+                )
+                time.sleep(wait_seconds)
+
+        if last_error is not None:
+            raise last_error
+
+        raise BackendClientError(f"Request failed unexpectedly for {path}")
+
+    def _send_request(self, url, path, method="GET", payload=None, expect_json=True, include_auth=True, retry_on_unauthorized=True):
         data = None
         headers = {}
 
@@ -99,10 +150,16 @@ class BackendClient:
                 )
 
             message = self._extract_error_message(body) or exc.reason
+            self.logger.error("HTTP %s on %s %s: %s", exc.code, method, path, message)
             raise BackendClientError(f"HTTP {exc.code} sur {path}: {message}") from exc
         except urllib.error.URLError as exc:
+            self.logger.error("Network error on %s %s: %s", method, path, exc.reason)
             raise BackendClientError(f"Backend inaccessible sur {url}: {exc.reason}") from exc
+        except socket.timeout as exc:
+            self.logger.error("Timeout on %s %s after %ss", method, path, self.timeout)
+            raise BackendClientError(f"Timeout backend sur {path} apres {self.timeout}s") from exc
         except json.JSONDecodeError as exc:
+            self.logger.error("Invalid JSON response on %s %s", method, path)
             raise BackendClientError(f"Reponse JSON invalide sur {path}") from exc
 
     @staticmethod
@@ -118,3 +175,8 @@ class BackendClient:
         if isinstance(payload, dict):
             return payload.get("message") or payload.get("error")
         return body
+
+    @staticmethod
+    def _is_retryable_error(error: BackendClientError) -> bool:
+        message = str(error).lower()
+        return "inaccessible" in message or "timeout" in message or "http 502" in message or "http 503" in message or "http 504" in message

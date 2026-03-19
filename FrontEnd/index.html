@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="icon" href="logoCAF.png" type="image/png">
     <link rel="stylesheet" href="sidebar.css">
     <link rel="stylesheet" href="styles.css">
@@ -24,7 +27,7 @@
                 <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
                 <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
                 <li class="dropdown">
-                    <a href="#" class="dropdown-btn">
+                    <a href="attendance.html" class="dropdown-btn">
                       <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
                       <i class="fas fa-caret-down dropdown-icon"></i>
                     </a>
@@ -54,14 +57,14 @@
                   <div class="user-profile">
                     <img src="1.jpg" alt="Admin" />
                     <div class="user-info">
-                      <span class="user-name">AMR </span>
-                      <span class="user-role">ADMIN</span>
+                      <span class="user-name" data-auth-name>System Admin</span>
+                      <span class="user-role" data-auth-role>ADMIN</span>
                     </div>
               
                     <!-- Formulaire au survol -->
                     <div class="user-popup">
-                      <p><strong>Nom :</strong> AMR</p>
-                      <p><strong>Statut :</strong> ADMIN</p>
+                      <p><strong>Nom :</strong> <span data-auth-name>System Admin</span></p>
+                      <p><strong>Statut :</strong> <span data-auth-role>ADMIN</span></p>
                     </div>
                   </div>
                 </div>
@@ -69,6 +72,35 @@
 
             <!-- Dashboard Content -->
             <div class="content">
+                <section class="dashboard-hero">
+                    <div class="hero-copy">
+                        <span class="hero-badge">Attendance command center</span>
+                        <h1>Une vue instantanee sur les mouvements, les presences et le rythme de vos equipes.</h1>
+                        <p>Le tableau de bord centralise la sante operationnelle du site: activite du jour, presences, absences et flux de controle d'acces.</p>
+                        <div class="hero-actions">
+                            <a href="attendance.html" class="hero-action primary">Voir les presences</a>
+                            <a href="employee.html" class="hero-action secondary">Gerer les employes</a>
+                        </div>
+                    </div>
+                    <div class="hero-panel">
+                        <div class="hero-panel-card emphasis">
+                            <span class="panel-label">Etat du systeme</span>
+                            <strong>Synchronisation active</strong>
+                            <p>Le backend, la base et le client de reconnaissance sont prets pour le suivi temps reel.</p>
+                        </div>
+                        <div class="hero-panel-grid">
+                            <div class="hero-panel-card">
+                                <span class="panel-label">Focus du jour</span>
+                                <strong>Controle des presences</strong>
+                            </div>
+                            <div class="hero-panel-card">
+                                <span class="panel-label">Niveau de securite</span>
+                                <strong>JWT + roles actifs</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Cards -->
                 <div class="cards" id="employeesTableBody">
                     <!-- <div class="card">
@@ -94,7 +126,7 @@
                             <div>
                                 <h3>Employés Actifs</h3>
                                 <p id="activeEmployees"></p>
-                                <span class="card-trend up">+12%</span>
+                                <span class="card-trend up" id="activeEmployeesTrend">Chargement...</span>
                             </div>
                         </div>
                         <div class="card analytics-card">
@@ -102,7 +134,7 @@
                             <div>
                                 <h3>Présences Aujourd'hui</h3>
                                 <p id="todayAttendance"></p>
-                                <span class="card-trend down">-5%</span>
+                                <span class="card-trend" id="todayAttendanceTrend">Chargement...</span>
                             </div>
                         </div>
                         <div class="card analytics-card">
@@ -110,7 +142,7 @@
                             <div>
                                 <h3>Absences</h3>
                                 <p id="absentCount">51</p>
-                                <span class="card-trend">10%</span>
+                                <span class="card-trend" id="absentCountTrend">Chargement...</span>
                             </div>
                         </div>
                     </div>
@@ -129,56 +161,8 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <!-- Rempli dynamiquement par JavaScript -->
                                         <tr>
-                                            <td>
-                                                <div class="employee-cell">
-                                                    <img src="1.jpg" alt="Amr Elbellaoui" class="employee-photo">
-                                                    <span>Amr ELBALLAOUI</span>
-                                                </div>
-                                            </td>
-                                            <td>08:12</td>
-                                            <td>Principal</td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="employee-cell">
-                                                    <img src="5.png" alt="mouad" class="employee-photo">
-                                                    <span>mouad</span>
-                                                </div>
-                                            </td>
-                                            <td>08:05</td>
-                                            <td>Secondaire</td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="employee-cell">
-                                                    <img src="3.png" alt="ahmed" class="employee-photo">
-                                                    <span>ahmed</span>
-                                                </div>
-                                            </td>
-                                            <td>07:58</td>
-                                            <td>Principal</td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="employee-cell">
-                                                    <img src="4.png" alt="elon musk" class="employee-photo">
-                                                    <span>elon musk</span>
-                                                </div>
-                                            </td>
-                                            <td>07:44</td>
-                                            <td>Principal</td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="employee-cell">
-                                                    <img src="bent.jpg" alt="marouan" class="employee-photo">
-                                                    <span>marouan</span>
-                                                </div>
-                                            </td>
-                                            <td>08:15</td>
-                                            <td>3 éme Gate</td>
+                                            <td colspan="3">Chargement des entrees recentes...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -200,65 +184,21 @@
                     <!-- Graphique de répartition des emplois par genre -->
                     <div class="chart-column">
                         <div class="chart-container">
-                            <h3><i class="fas fa-venus-mars"></i> Répartition des emplois par genre</h3>
+                            <h3><i class="fas fa-venus-mars"></i> Repartition des emplois par genre</h3>
                             <div class="chart-wrapper">
                                 <canvas id="genderDistributionChart"></canvas>
                             </div>
-                            <!-- Ajout de statistiques détaillées sous le graphique -->
                             <div class="gender-stats-container mt-4">
                                 <h4 class="gender-stats-title"><i class="fas fa-chart-pie"></i> Statistiques détaillées</h4>
-                                <div class="gender-stats-grid">
-                                    <div class="gender-stat-item">
-                                        <div class="stat-label">
-                                            <span class="color-dot" style="background-color: #FF6384;"></span>
-                                            <span>Femmes - Administration</span>
-                                        </div>
-                                        <div class="stat-value">120 (24%)</div>
-                                    </div>
-                                    <div class="gender-stat-item">
-                                        <div class="stat-label">
-                                            <span class="color-dot" style="background-color: #36A2EB;"></span>
-                                            <span>Hommes - Administration</span>
-                                        </div>
-                                        <div class="stat-value">80 (16%)</div>
-                                    </div>
-                                    <div class="gender-stat-item">
-                                        <div class="stat-label">
-                                            <span class="color-dot" style="background-color: #FF9F9F;"></span>
-                                            <span>Femmes - Technique</span>
-                                        </div>
-                                        <div class="stat-value">60 (12%)</div>
-                                    </div>
-                                    <div class="gender-stat-item">
-                                        <div class="stat-label">
-                                            <span class="color-dot" style="background-color: #4BC0C0;"></span>
-                                            <span>Hommes - Technique</span>
-                                        </div>
-                                        <div class="stat-value">140 (28%)</div>
-                                    </div>
-                                    <div class="gender-stat-item">
-                                        <div class="stat-label">
-                                            <span class="color-dot" style="background-color: #FF99CC;"></span>
-                                            <span>Femmes - Management</span>
-                                        </div>
-                                        <div class="stat-value">40 (8%)</div>
-                                    </div>
-                                    <div class="gender-stat-item">
-                                        <div class="stat-label">
-                                            <span class="color-dot" style="background-color: #9AD0F5;"></span>
-                                            <span>Hommes - Management</span>
-                                        </div>
-                                        <div class="stat-value">60 (12%)</div>
-                                    </div>
-                                </div>
+                                <div class="gender-stats-grid" id="genderStatsGrid"></div>
                                 <div class="gender-summary">
                                     <div class="summary-item">
                                         <span class="summary-label">Total Femmes:</span>
-                                        <span class="summary-value">220 (44%)</span>
+                                        <span class="summary-value" id="femaleSummary">Chargement...</span>
                                     </div>
                                     <div class="summary-item">
                                         <span class="summary-label">Total Hommes:</span>
-                                        <span class="summary-value">280 (56%)</span>
+                                        <span class="summary-value" id="maleSummary">Chargement...</span>
                                     </div>
                                 </div>
                             </div>
@@ -285,19 +225,7 @@
                     <h3><i class="fas fa-bell"></i> Activité Récente</h3>
                     <ul id="recentActivity">
                         <li>
-                            <i class="fas fa-user-check activity-icon"></i>
-                            <span>Ahmed Benali a pointé à 08:12</span>
-                            <span class="activity-time">10 min</span>
-                        </li>
-                        <li>
-                            <i class="fas fa-user-times activity-icon"></i>
-                            <span>Fatima Zahra absente aujourd'hui</span>
-                            <span class="activity-time">1h</span>
-                        </li>
-                        <li>
-                            <i class="fas fa-edit activity-icon"></i>
-                            <span>Modification du profil de Karim</span>
-                            <span class="activity-time">2h</span>
+                            <span>Chargement de l'activite recente...</span>
                         </li>
                     </ul>
                 </div>
@@ -308,7 +236,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
-    <script src="parametre.js"></script> 
+    <script src="parameter.js"></script> 
     <script src="attendance.js"></script> 
 </body>
 </html>

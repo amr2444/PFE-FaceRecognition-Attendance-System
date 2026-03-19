@@ -2,6 +2,7 @@ package ma.dream.case_backend.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ma.dream.case_backend.dto.EntreeRecenteDto;
 import ma.dream.case_backend.dto.FaceRecognitionEmployeeDto;
 import ma.dream.case_backend.dto.FaceRecognitionEventRequestDto;
 import ma.dream.case_backend.dto.FaceRecognitionEventResponseDto;
@@ -10,6 +11,7 @@ import ma.dream.case_backend.enums.RecognitionEventType;
 import ma.dream.case_backend.enums.StatutEmploye;
 import ma.dream.case_backend.enums.StatutPresence;
 import ma.dream.case_backend.exceptions.TechnicalException;
+import ma.dream.case_backend.mapper.EntreeRecenteMapper;
 import ma.dream.case_backend.model.Employee;
 import ma.dream.case_backend.model.EntreeRecente;
 import ma.dream.case_backend.model.PresenceJour;
@@ -43,12 +45,21 @@ public class FaceRecognitionService {
     private final EmployeRepository employeRepository;
     private final PresenceJourRepository presenceJourRepository;
     private final EntreeRecenteRepository entreeRecenteRepository;
+    private final EntreeRecenteMapper entreeRecenteMapper;
     private final EmployeeService employeeService;
 
     public List<FaceRecognitionEmployeeDto> getActiveEmployees() {
         return employeRepository.findAllByStatut(StatutEmploye.ACTIF)
                 .stream()
                 .map(this::toFaceRecognitionEmployeeDto)
+                .toList();
+    }
+
+    public List<EntreeRecenteDto> getRecentEntries(int limit) {
+        return entreeRecenteRepository.findTop10ByOrderByDateDescHeureDesc()
+                .stream()
+                .limit(Math.max(1, Math.min(limit, 10)))
+                .map(entreeRecenteMapper::toEntreeRecenteDto)
                 .toList();
     }
 

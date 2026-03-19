@@ -12,6 +12,8 @@ import java.util.List;
 public interface EntreeRecenteMapper {
 
     @Mapping(source = "employee.employeeId", target = "employeeId")
+    @Mapping(source = "employee.nom", target = "employeeName")
+    @Mapping(source = "employee.photo", target = "employeePhoto")
     EntreeRecenteDto toEntreeRecenteDto(EntreeRecente entreeRecente);
 
     @Mapping(source = "employeeId", target = "employee.employeeId")

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feuille de Présence | Dashboard Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="sidebar.css">
     <link rel="stylesheet" href="styles.css">
@@ -24,7 +27,7 @@
                 <li><a href="index.html"><i class="fas fa-home"></i> <span class="menu-text">Dashboard</span></a></li>
                 <li><a href="employee.html"><i class="fas fa-users"></i> <span class="menu-text">EMPLOYEES</span></a></li>
                 <li class="dropdown">
-                    <a href="#" class="dropdown-btn">
+                    <a href="attendance.html" class="dropdown-btn">
                       <i class="fas fa-edit"></i> <span class="menu-text">Attendance</span>
                       <i class="fas fa-caret-down dropdown-icon"></i>
                     </a>
@@ -51,14 +54,14 @@
                   <div class="user-profile">
                     <img src="1.jpg" alt="Admin" />
                     <div class="user-info">
-                      <span class="user-name">AMR</span>
-                      <span class="user-role">ADMIN</span>
+                      <span class="user-name" data-auth-name>System Admin</span>
+                      <span class="user-role" data-auth-role>ADMIN</span>
                     </div>
               
                     <!-- Formulaire au survol -->
                     <div class="user-popup">
-                      <p><strong>Nom :</strong> AMR</p>
-                      <p><strong>Statut :</strong> ADMIN</p>
+                      <p><strong>Nom :</strong> <span data-auth-name>System Admin</span></p>
+                      <p><strong>Statut :</strong> <span data-auth-role>ADMIN</span></p>
                     </div>
                   </div>
                 </div>
@@ -66,6 +69,13 @@
 
             <!-- Attendance Content -->
             <div class="content">
+                <section class="section-hero sheet-hero">
+                    <div>
+                        <span class="section-kicker">Monthly overview</span>
+                        <h1 class="section-title">Visualisez la feuille de presence mensuelle avec une lecture plus nette.</h1>
+                        <p class="section-copy">Filtrez par mois, reperez les absences et sortez rapidement une feuille exploitable pour le suivi administratif.</p>
+                    </div>
+                </section>
                 <!-- Filter Section -->
                 <div class="header-left">
                     <h1 class="page-title"><i class="fas fa-calendar-alt"></i> Attendance Sheet</h1>

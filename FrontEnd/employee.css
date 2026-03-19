@@ -663,3 +663,33 @@ input:focus, select:focus, textarea:focus {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* ===== PREMIUM EMPLOYEE OVERRIDES ===== */
+.section-hero {
+    display: grid;
+    grid-template-columns: 1.3fr 0.8fr;
+    gap: 20px;
+    padding: 26px;
+    border-radius: 28px;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, rgba(15, 106, 67, 0.12), rgba(214, 164, 77, 0.12));
+    border: 1px solid var(--border-color);
+}
+.section-kicker { display:inline-flex; margin-bottom:12px; padding:6px 12px; border-radius:999px; background:rgba(15,106,67,.1); color:var(--primary-color); font-size:.75rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.section-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(1.8rem,3vw,2.7rem); letter-spacing:-.05em; line-height:1.04; margin-bottom:12px; }
+.section-copy { color: var(--text-light); max-width: 620px; }
+.section-meta-grid { display:grid; gap:14px; }
+.section-meta-card { padding:18px; border-radius:20px; background:rgba(255,255,255,.54); border:1px solid var(--border-color); }
+.section-meta-card span { display:block; font-size:.75rem; text-transform:uppercase; letter-spacing:.12em; color:var(--text-light); margin-bottom:6px; }
+.section-meta-card strong { font-family:'Space Grotesk',sans-serif; }
+.action-bar { padding:18px; background:rgba(255,255,255,.56); border:1px solid var(--border-color); border-radius:24px; }
+.table-container, .modal-content { border-radius:24px; border:1px solid var(--border-color); }
+.search-container input, .filter-container select, .form-group input, .form-group select, .form-group textarea { min-height:48px; border-radius:14px; border:1px solid var(--border-color); background:rgba(255,255,255,.88); }
+.search-btn, .add-btn, .save-btn, .cancel-btn, .delete-btn, .photo-upload-btn { border-radius:14px; }
+.add-btn, .save-btn, .photo-upload-btn { background:linear-gradient(135deg, var(--primary-color), var(--primary-dark)); }
+thead th { background:rgba(15,106,67,.08); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; }
+tbody tr:hover { background-color:rgba(15,106,67,.04); }
+.action-btn { width:36px; height:36px; border-radius:12px; }
+.employee-photo-preview { padding:24px; background:linear-gradient(135deg, rgba(15,106,67,.08), rgba(214,164,77,.08)); }
+.view-content { padding:24px; }
+@media (max-width: 900px) { .section-hero { grid-template-columns:1fr; } }

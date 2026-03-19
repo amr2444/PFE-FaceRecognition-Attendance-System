@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const photoUpload = document.getElementById('photoUpload');
     const photoDataInput = document.getElementById('photoData');
 
+    const getApiErrorMessage = (error, fallbackMessage) => (error && error.message) || fallbackMessage;
+
     // ===== INITIALISATION =====
     filterEmployees();
     setupEventListeners();
@@ -50,18 +52,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const statusValue = statusFilter ? statusFilter.value : '';
         
         try {
-            let url = `${API_BASE_URL}/?page=${currentPage - 1}&size=${rowsPerPage}`;
-            
-            // Ajouter les paramètres de filtre
-            if (searchTerm) url += `&searchByNom=${searchTerm}`;
-            if (departmentValue) url += `&searchByDepartement=${departmentValue}`;
-            if (statusValue) url += `&searchByStatus=${statusValue}`;
-            
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error('Erreur lors du filtrage des employés');
-            }
-            const data = await response.json();
+            const params = new URLSearchParams({
+                page: currentPage - 1,
+                size: rowsPerPage,
+                ...(searchTerm && { searchByNom: searchTerm }),
+                ...(departmentValue && { searchByDepartement: departmentValue }),
+                ...(statusValue && { searchByStatus: statusValue })
+            });
+
+            const data = await AppApi.get(`/employes/?${params.toString()}`, 'Erreur lors du filtrage des employes');
             totalPages = Math.max(data.totalPages || 0, 1);
 
             if (data.totalPages > 0 && currentPage > data.totalPages) {
@@ -77,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
             employeesTableBody.innerHTML = `
                 <tr>
                     <td colspan="10" class="error-message">
-                        Erreur lors du chargement des employés. Veuillez réessayer.
+                        ${getApiErrorMessage(error, 'Erreur lors du chargement des employes. Veuillez reessayer.')}
                     </td>
                 </tr>
             `;
@@ -262,26 +261,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== OPÉRATIONS CRUD =====
     async function fetchEmployeeDetails(id) {
         try {
-            const response = await fetch(`${API_BASE_URL}/${id}`);
-            if (!response.ok) throw new Error('Erreur lors de la récupération des données');
-            return await response.json();
+            return await AppApi.get(`/employes/${id}`, 'Erreur lors de la recuperation des donnees');
         } catch (error) {
             console.error('Erreur:', error);
-            alert('Erreur lors du chargement des données de l\'employé');
+            AppUI.notify(getApiErrorMessage(error, 'Erreur lors du chargement des donnees de l\'employe.'), 'error');
             return null;
         }
     }
 
     async function addEmployee(employeeData) {
         try {
-            const response = await fetch(`${API_BASE_URL}/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(employeeData)
-            });
-            
-            if (!response.ok) throw new Error('Erreur lors de l\'ajout');
-            return await response.json();
+            return await AppApi.post('/employes/', employeeData, 'Erreur lors de l\'ajout');
         } catch (error) {
             console.error('Erreur:', error);
             throw error;
@@ -290,14 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function updateEmployee(id, employeeData) {
         try {
-            const response = await fetch(`${API_BASE_URL}/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(employeeData)
-            });
-            
-            if (!response.ok) throw new Error('Erreur lors de la mise à jour');
-            return await response.json();
+            return await AppApi.put(`/employes/${id}`, employeeData, 'Erreur lors de la mise a jour');
         } catch (error) {
             console.error('Erreur:', error);
             throw error;
@@ -306,11 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function deleteEmployeeFromAPI(id) {
         try {
-            const response = await fetch(`${API_BASE_URL}/${id}`, {
-                method: 'DELETE'
-            });
-            
-            if (!response.ok) throw new Error('Erreur lors de la suppression');
+            await AppApi.delete(`/employes/${id}`, 'Erreur lors de la suppression');
             return true;
         } catch (error) {
             console.error('Erreur:', error);
@@ -340,16 +319,16 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             if (currentEmployeeId) {
                 await updateEmployee(currentEmployeeId, employeeData);
-                alert('Employé modifié avec succès!');
+                AppUI.notify('Employe modifie avec succes.', 'success');
             } else {
                 await addEmployee(employeeData);
-                alert('Employé ajouté avec succès!');
+                AppUI.notify('Employe ajoute avec succes.', 'success');
             }
             
             await filterEmployees();
             closeEmployeeModal();
         } catch (error) {
-            alert('Une erreur est survenue: ' + error.message);
+            AppUI.notify(getApiErrorMessage(error, 'Une erreur est survenue.'), 'error');
         }
     }
 
@@ -397,11 +376,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             await deleteEmployeeFromAPI(currentEmployeeId);
-            alert('Employé supprimé avec succès!');
+            AppUI.notify('Employe supprime avec succes.', 'success');
             await filterEmployees();
             closeDeleteConfirmation();
         } catch (error) {
-            alert('Une erreur est survenue lors de la suppression: ' + error.message);
+            AppUI.notify(getApiErrorMessage(error, 'Une erreur est survenue lors de la suppression.'), 'error');
         }
     }
 
@@ -430,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.style.overflow = 'hidden';
         } catch (error) {
             console.error('Erreur:', error);
-            alert('Erreur lors du chargement des données de l\'employé');
+            AppUI.notify('Erreur lors du chargement des donnees de l\'employe.', 'error');
         }
     };
 
@@ -461,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.style.overflow = 'hidden';
         } catch (error) {
             console.error('Erreur:', error);
-            alert('Erreur lors du chargement des données de l\'employé');
+            AppUI.notify('Erreur lors du chargement des donnees de l\'employe.', 'error');
         }
     };
 
@@ -470,12 +449,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!file) return;
         
         if (!file.type.match('image.*')) {
-            alert('Veuillez sélectionner une image.');
+            AppUI.notify('Veuillez selectionner une image.', 'error');
             return;
         }
         
         if (file.size > 2 * 1024 * 1024) {
-            alert('La taille de l\'image ne doit pas dépasser 2MB.');
+            AppUI.notify('La taille de l\'image ne doit pas depasser 2MB.', 'error');
             return;
         }
         

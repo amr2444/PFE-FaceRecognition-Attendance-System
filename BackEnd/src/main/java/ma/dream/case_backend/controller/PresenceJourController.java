@@ -1,6 +1,11 @@
 package ma.dream.case_backend.controller;
 
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -10,6 +15,8 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ma.dream.case_backend.config.SwaggerConfig;
+import ma.dream.case_backend.dto.ApiErrorResponseDto;
 import ma.dream.case_backend.dto.PresenceJourDto;
 import ma.dream.case_backend.dto.PresenceStatutCountDto;
 import ma.dream.case_backend.exceptions.TechnicalException;
@@ -29,17 +36,27 @@ import java.util.List;
 @AllArgsConstructor
 @Slf4j
 @Validated
+@SecurityRequirement(name = SwaggerConfig.BEARER_SECURITY_SCHEME)
 public class PresenceJourController {
 
     private final PresenceJourService presenceJourService;
 
     @PostMapping("/")
+    @Operation(summary = "Create attendance", description = "Creates a new attendance record")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Attendance created"),
+            @ApiResponse(responseCode = "400", description = "Invalid payload or business rule violation", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     public ResponseEntity<PresenceJourDto> createPresenceJour(@Valid @RequestBody PresenceJourDto presenceJourDto) {
         PresenceJourDto createdPresenceJour = presenceJourService.createPresenceJour(presenceJourDto);
         return new ResponseEntity<>(createdPresenceJour, HttpStatus.CREATED);
     }
 
     @Operation(summary = "Retrieve all PresenceJour", description = "Récupère la liste de tous les PresenceJour")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Attendances returned"),
+            @ApiResponse(responseCode = "400", description = "Invalid query parameters", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @GetMapping("/")
     public ResponseEntity<Page<PresenceJourDto>> getAllPresenceJour(
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page must be greater than or equal to 0") int page,
@@ -55,6 +72,11 @@ public class PresenceJourController {
     }
 
     @Operation(summary = "Update PresenceJour details", description = "Récupère les détails d'un PresenceJour par ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Attendance updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid payload or business rule violation", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "Attendance not found", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @PutMapping("/{id}")
     public ResponseEntity<PresenceJourDto> updatePresenceJour(@PathVariable @Positive(message = "id must be positive") Long id, @Valid @RequestBody PresenceJourDto presenceJourDto) throws TechnicalException {
         log.info("Update PresenceJour: {}", id);
@@ -63,6 +85,11 @@ public class PresenceJourController {
     }
 
     @Operation(summary = "Retrieve PresenceJour by ID", description = "Récupère les détails d'un PresenceJour par ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Attendance returned"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "Attendance not found", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @GetMapping("/{id}")
     public ResponseEntity<PresenceJourDto> getPresenceJourById(@PathVariable @Positive(message = "id must be positive") Long id) throws TechnicalException {
         log.info("get PresenceJour by id: {}", id);
@@ -70,6 +97,11 @@ public class PresenceJourController {
     }
 
     @Operation(summary = "Delete a PresenceJour", description = "Supprime un PresenceJour par ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Attendance deleted"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "Attendance not found", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePresenceJour(@PathVariable @Positive(message = "id must be positive") Long id) throws TechnicalException {
         log.info("delete PresenceJour by id: {}", id);
@@ -86,6 +118,10 @@ public class PresenceJourController {
 
 
     @Operation(summary = "Export PresenceJour data", description = "Exporte les données de présence dans un format spécifié (CSV, Excel, etc.)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Export generated"),
+            @ApiResponse(responseCode = "400", description = "Invalid export parameters", content = @Content(schema = @Schema(implementation = ApiErrorResponseDto.class)))
+    })
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportPresenceJour(
             @RequestParam(defaultValue = "csv") @Pattern(regexp = "^(?i)(csv|excel)$", message = "format must be csv or excel") String format,

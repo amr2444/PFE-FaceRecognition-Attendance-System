@@ -20,7 +20,8 @@
 
 // === Global Theme Initialization ===
 function applySavedTheme() {
-    const theme = localStorage.getItem('theme');
+    const rawTheme = localStorage.getItem('theme');
+    const theme = rawTheme ? JSON.parse(rawTheme) : 'light';
     if (theme === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
         document.body.classList.add('dark-theme');
@@ -36,9 +37,27 @@ const API_ORIGIN = 'http://localhost:8080';
 const TOKEN_STORAGE_KEY = 'authToken';
 const USER_STORAGE_KEY = 'authUser';
 
+function ensureToastContainer() {
+    let container = document.getElementById('app-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'app-toast-container';
+        container.style.position = 'fixed';
+        container.style.top = '20px';
+        container.style.right = '20px';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '12px';
+        container.style.zIndex = '3000';
+        document.body.appendChild(container);
+    }
+
+    return container;
+}
+
 const Auth = {
-    modeLabel: 'JWT backend',
-    description: 'Authentification verifiee par le backend Spring Boot avec token Bearer.',
+    modeLabel: 'Connexion securisee',
+    description: 'Acces protege au centre de supervision des presences et de la reconnaissance faciale.',
     getStorage: () => localStorage.getItem('rememberMe') === 'true' ? localStorage : sessionStorage,
     getToken: () => localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY),
     getUser: () => {
@@ -80,6 +99,22 @@ const Auth = {
     }
 };
 
+function getThemePreference() {
+    const rawTheme = localStorage.getItem('theme');
+    return rawTheme ? JSON.parse(rawTheme) : 'light';
+}
+
+function applyThemePreference(theme = getThemePreference()) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.classList.toggle('dark-theme', theme === 'dark');
+    document.body.classList.toggle('compact-tables', JSON.parse(localStorage.getItem('compactTables') || 'false'));
+}
+
+function getBooleanPreference(key, defaultValue = false) {
+    const raw = localStorage.getItem(key);
+    return raw !== null ? JSON.parse(raw) : defaultValue;
+}
+
 const originalFetch = window.fetch.bind(window);
 window.fetch = async (input, init = {}) => {
     const requestUrl = typeof input === 'string' ? input : input.url;
@@ -112,8 +147,73 @@ function renderAuthDemoNotice() {
         description.textContent = Auth.description;
     }
     if (securityHint) {
-        securityHint.textContent = 'Token Bearer actif';
+        securityHint.textContent = 'Acces protege';
     }
+}
+
+function initSidebarNavigation() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) {
+        return;
+    }
+
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const attendancePages = ['attendance.html', 'empAtt.html', 'prsheet.html'];
+
+    document.querySelectorAll('.menu li').forEach((li) => {
+        const directLink = li.querySelector(':scope > a');
+        if (!directLink) {
+            return;
+        }
+
+            const href = directLink.getAttribute('href');
+            const isAttendanceParent = directLink.classList.contains('dropdown-btn');
+
+        if (isAttendanceParent) {
+            const submenu = li.querySelector('.submenu');
+            const hasActiveChild = attendancePages.includes(currentPage);
+            li.classList.toggle('active-parent', hasActiveChild);
+            if (submenu && hasActiveChild && !sidebar.classList.contains('collapsed')) {
+                submenu.style.display = 'block';
+            }
+            return;
+        }
+
+        li.classList.toggle('active', href === currentPage);
+    });
+
+    document.querySelectorAll('.dropdown-btn').forEach((btn) => {
+        const submenu = btn.nextElementSibling;
+        btn.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (!submenu) {
+                window.location.href = btn.getAttribute('href') || 'attendance.html';
+                return;
+            }
+
+            if (sidebar.classList.contains('collapsed') || window.innerWidth <= 768 || currentPage !== 'attendance.html') {
+                window.location.href = btn.getAttribute('href') || 'attendance.html';
+                return;
+            }
+
+            submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+        });
+    });
+}
+
+function hydrateUserProfile() {
+    const user = Auth.getUser();
+    if (!user) {
+        return;
+    }
+
+    document.querySelectorAll('[data-auth-name]').forEach((node) => {
+        node.textContent = user.name || user.email || 'Utilisateur';
+    });
+
+    document.querySelectorAll('[data-auth-role]').forEach((node) => {
+        node.textContent = user.role || 'ADMIN';
+    });
 }
 
 function initLoginClock() {
@@ -153,8 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       localStorage.setItem('theme', JSON.stringify(newTheme));
       document.documentElement.setAttribute('data-theme', newTheme);
-      document.body.style.backgroundColor = newTheme === 'dark' ? '#1a1a1a' : '#f5f6fa';
-  
+
       document.getElementById('sidebar')?.classList.toggle('dark-theme', newTheme === 'dark');
       document.querySelector('.header')?.classList.toggle('dark-theme', newTheme === 'dark');
       document.getElementById('mainContent')?.classList.toggle('dark-theme', newTheme === 'dark');
@@ -168,6 +267,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialTheme = JSON.parse(localStorage.getItem('theme')) || 'light';
     updateIcon(initialTheme);
 });
+
+document.addEventListener('DOMContentLoaded', hydrateUserProfile);
+document.addEventListener('DOMContentLoaded', () => applyThemePreference());
+document.addEventListener('themeChanged', () => applyThemePreference());
 
 const UI = {
     showNotification: (element, message, type) => {
@@ -206,8 +309,127 @@ const UI = {
                 icon.classList.toggle('fa-eye-slash');
             }
         });
+    },
+    notify: (message, type = 'info') => {
+        if (!message) return;
+
+        const container = ensureToastContainer();
+        const toast = document.createElement('div');
+        const palette = {
+            success: { bg: '#e7f8ef', border: '#20a464', text: '#145236' },
+            error: { bg: '#fdecec', border: '#d64545', text: '#7a1f1f' },
+            info: { bg: '#edf5ff', border: '#3578e5', text: '#173f82' },
+            warning: { bg: '#fff6e5', border: '#db8b00', text: '#7a5200' }
+        };
+        const tone = palette[type] || palette.info;
+
+        toast.textContent = message;
+        toast.style.minWidth = '260px';
+        toast.style.maxWidth = '360px';
+        toast.style.padding = '14px 16px';
+        toast.style.borderRadius = '14px';
+        toast.style.border = `1px solid ${tone.border}`;
+        toast.style.background = tone.bg;
+        toast.style.color = tone.text;
+        toast.style.boxShadow = '0 12px 30px rgba(15, 23, 42, 0.14)';
+        toast.style.fontSize = '0.95rem';
+        toast.style.lineHeight = '1.4';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-8px)';
+        toast.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        });
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-8px)';
+            setTimeout(() => toast.remove(), 220);
+        }, 4000);
+
+        if (type === 'success' && getBooleanPreference('recognitionSound', true)) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 784;
+                gain.gain.value = 0.015;
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.08);
+            } catch (error) {
+                // Ignore audio failures silently.
+            }
+        }
     }
 };
+
+const AppApi = {
+    origin: API_ORIGIN,
+    buildUrl: (path) => path.startsWith('http') ? path : `${API_ORIGIN}${path}`,
+    async parseError(response, fallbackMessage = 'Une erreur est survenue.') {
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch (error) {
+            payload = null;
+        }
+
+        if (payload?.validationErrors) {
+            const firstValidationError = Object.values(payload.validationErrors)[0];
+            if (firstValidationError) {
+                return new Error(firstValidationError);
+            }
+        }
+
+        return new Error(payload?.message || fallbackMessage);
+    },
+    async json(path, init = {}, fallbackMessage = 'Une erreur est survenue.') {
+        const response = await fetch(AppApi.buildUrl(path), init);
+        if (!response.ok) {
+            throw await AppApi.parseError(response, fallbackMessage);
+        }
+        if (response.status === 204) {
+            return null;
+        }
+        return response.json();
+    },
+    async blob(path, init = {}, fallbackMessage = 'Une erreur est survenue.') {
+        const response = await fetch(AppApi.buildUrl(path), init);
+        if (!response.ok) {
+            throw await AppApi.parseError(response, fallbackMessage);
+        }
+        return { blob: await response.blob(), response };
+    },
+    get(path, fallbackMessage) {
+        return AppApi.json(path, { method: 'GET' }, fallbackMessage);
+    },
+    post(path, body, fallbackMessage) {
+        return AppApi.json(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }, fallbackMessage);
+    },
+    put(path, body, fallbackMessage) {
+        return AppApi.json(path, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }, fallbackMessage);
+    },
+    delete(path, fallbackMessage) {
+        return AppApi.json(path, { method: 'DELETE' }, fallbackMessage);
+    }
+};
+
+window.AppApi = AppApi;
+window.AppUI = UI;
 
 // ===== LOGIN PAGE =====
 const initLoginPage = () => {
@@ -322,6 +544,11 @@ const initLoginPage = () => {
 
 // ===== DASHBOARD PAGE =====
 const Dashboard = {
+    charts: {
+        entries: null,
+        gender: null,
+        attendance: null
+    },
     init: () => {
         console.log('[DEBUG] Dashboard.init() called');
         if (!Auth.checkLogin()) {
@@ -348,6 +575,7 @@ const Dashboard = {
 
         Dashboard.initSidebar();
         Dashboard.loadContent();
+        initSidebarNavigation();
     },
 
     initSidebar: () => {
@@ -385,57 +613,14 @@ const Dashboard = {
             }
         });
 
-        // Gestion des sous-menus
-        document.querySelectorAll('.dropdown').forEach(dropdown => {
-            const dropdownBtn = dropdown.querySelector('.dropdown-btn');
-            const submenu = dropdown.querySelector('.submenu');
-            
-            if (dropdownBtn && submenu) {
-                dropdownBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Si la sidebar est réduite, rediriger vers la page
-                    if (sidebar.classList.contains('collapsed')) {
-                        const href = this.getAttribute('href');
-                        if (href) window.location.href = href;
-                    } else {
-                        // Sinon, toggle le sous-menu
-                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
-                    }
-                });
-            }
-        });
     },
 
     loadContent: () => {
-        // Données utilisateurs
-        const users = [
-            { id: 1, name: "John Doe", email: "john@example.com", role: "admin" },
-            { id: 2, name: "Jane Smith", email: "jane@example.com", role: "editor" }
-        ];
-
-        // Mettre à jour le tableau
-        const tableBody = document.getElementById('user-table')?.querySelector('tbody');
-        if (tableBody) {
-            tableBody.innerHTML = users.map(user => `
-                <tr>
-                    <td>${user.id}</td>
-                    <td>${user.name}</td>
-                    <td>${user.email}</td>
-                    <td><span class="role-badge ${user.role}">${user.role}</span></td>
-                    <td>
-                        <button class="edit-btn">Edit</button>
-                        <button class="delete-btn">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-            document.getElementById('totalUsers').textContent = users.length;
-        }
-
-        // Initialiser les graphiques
+        hydrateUserProfile();
+        Dashboard.setLoadingState(true);
         Dashboard.initCharts();
         Dashboard.loadRecentActivity();
+        fetchEmployeeStats();
     
 
         // Gestion du logout
@@ -454,22 +639,23 @@ const Dashboard = {
         });
     },
 
-    initCharts: () => {
-        // Graphique des entrées par heure
-        const hours = Array.from({length: 24}, (_, i) => i + 'h');
-        const entriesData = [5,10,15,20,35,50,70,85,90,80,65,55,45,40,35,30,25,20,15,10,8,5,3,2];
+    setLoadingState: (isLoading) => {
+        ['employeesTableBody', 'entriesChart', 'genderDistributionChart', 'attendanceReportChart', 'recentActivity']
+            .forEach((id) => document.getElementById(id)?.closest('.card, .chart-container, .activity-feed, .cards')?.classList.toggle('is-loading', isLoading));
+    },
 
+    initCharts: () => {
         const entriesCtx = document.getElementById('entriesChart')?.getContext('2d');
-        if (entriesCtx) {
-            new Chart(entriesCtx, {
+        if (entriesCtx && !Dashboard.charts.entries) {
+            Dashboard.charts.entries = new Chart(entriesCtx, {
                 type: 'bar',
                 data: {
-                    labels: hours,
+                    labels: [],
                     datasets: [{
                         label: 'Nombre d\'entrées',
-                        data: entriesData,
-                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
+                        data: [],
+                        backgroundColor: 'rgba(15, 106, 67, 0.68)',
+                        borderRadius: 12,
                         borderWidth: 1
                     }]
                 },
@@ -496,149 +682,38 @@ const Dashboard = {
                 }
             });
         }
-
-        // Graphique des présences/absences
-        const monthlyCtx = document.getElementById('myChart')?.getContext('2d');
-        if (monthlyCtx) {
-            new Chart(monthlyCtx, {
-                type: 'line',
-                data: {
-                    labels: Array.from({length: 30}, (_, i) => i+1 + ' Juin'),
-                    datasets: [
-                        {
-                            label: 'Présences',
-                            data: Array.from({length: 30}, () => Math.floor(Math.random() * 20) + 5),
-                            borderColor: '#2ecc71',
-                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                            tension: 0.3,
-                            fill: true
-                        },
-                        {
-                            label: 'Absences',
-                            data: Array.from({length: 30}, () => Math.floor(Math.random() * 5)),
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                            tension: 0.3,
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        tooltip: { mode: 'index', intersect: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, max: 25 }
-                    }
-                }
-            });
-        }
         
         // Initialisation des nouveaux graphiques
         initAdditionalCharts();
     },
 
     loadRecentActivity: () => {
-        const activities = [
-            { icon: 'fa-user-check', text: 'Ahmed Benali a pointé à 08:12', time: '10 min' },
-            { icon: 'fa-user-times', text: 'Fatima Zahra absente aujourd\'hui', time: '1h' },
-            { icon: 'fa-edit', text: 'Modification du profil de Karim', time: '2h' },
-            { icon: 'fa-door-open', text: 'Pause déjeuner: 35 employés', time: '3h' }
-        ];
-
         const activityList = document.getElementById('recentActivity');
-        if (activityList) {
-            activityList.innerHTML = activities.map(act => `
-                <li>
-                    <i class="fas ${act.icon} activity-icon"></i>
-                    <span>${act.text}</span>
-                    <span class="activity-time">${act.time}</span>
-                </li>
-            `).join('');
-        }
+        fetchRecentEntries(activityList);
 
         // Rafraîchissement automatique
         setInterval(() => {
             if (shouldRenderDashboardStats()) {
                 fetchEmployeeStats();
             }
-        }, 30000);
+        }, getBooleanPreference('autoRefreshDashboard', true) ? 30000 : 600000);
     }
 };
 
 // Initialisation des nouveaux graphiques
 function initAdditionalCharts() {
-    // Données pour le graphique de répartition des emplois par genre
-    const genderData = {
-        labels: [
-            'Femmes - Administration',
-            'Hommes - Administration',
-            'Femmes - Technique',
-            'Hommes - Technique',
-            'Femmes - Management',
-            'Hommes - Management'
-        ],
-        datasets: [{
-            data: [120, 80, 60, 140, 40, 60],
-            backgroundColor: [
-                '#FF6384',
-                '#36A2EB',
-                '#FF9F9F',
-                '#4BC0C0',
-                '#FF99CC',
-                '#9AD0F5'
-            ],
-            hoverBackgroundColor: [
-                '#FF6384',
-                '#36A2EB',
-                '#FF9F9F',
-                '#4BC0C0',
-                '#FF99CC',
-                '#9AD0F5'
-            ]
-        }]
-    };
-
-    // Données pour le graphique de rapport de présence
-    const attendanceData = {
-        labels: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'],
-        datasets: [{
-            label: 'Taux de présence (%)',
-            data: [92, 96, 88, 85, 78],
-            backgroundColor: [
-                '#27ae60',
-                '#2ecc71',
-                '#f39c12',
-                '#e67e22',
-                '#e74c3c'
-            ],
-            borderColor: [
-                '#27ae60',
-                '#2ecc71',
-                '#f39c12',
-                '#e67e22',
-                '#e74c3c'
-            ],
-            borderWidth: 1
-        }]
-    };
-
-    // Commentaires pour le rapport de présence
-    const attendanceComments = [
-        { day: 'Lundi', comment: 'Bon taux de présence', color: '#27ae60' },
-        { day: 'Mardi', comment: 'Excellent taux de présence', color: '#2ecc71' },
-        { day: 'Mercredi', comment: 'Présence en baisse', color: '#f39c12' },
-        { day: 'Jeudi', comment: 'Attention, taux faible', color: '#e67e22' },
-        { day: 'Vendredi', comment: 'Taux critique', color: '#e74c3c' }
-    ];
-
-    // Initialiser le graphique de répartition des emplois par genre
     const genderCtx = document.getElementById('genderDistributionChart')?.getContext('2d');
-    if (genderCtx) {
-        new Chart(genderCtx, {
+    if (genderCtx && !Dashboard.charts.gender) {
+        Dashboard.charts.gender = new Chart(genderCtx, {
             type: 'doughnut',
-            data: genderData,
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: ['#d6a44d', '#0f6a43', '#d96c6c', '#4b7fd6', '#8f63d9'],
+                    borderWidth: 0
+                }]
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -667,28 +742,35 @@ function initAdditionalCharts() {
         });
     }
 
-    // Initialiser le graphique de rapport de présence
     const attendanceCtx = document.getElementById('attendanceReportChart')?.getContext('2d');
-    if (attendanceCtx) {
-        new Chart(attendanceCtx, {
+    if (attendanceCtx && !Dashboard.charts.attendance) {
+        Dashboard.charts.attendance = new Chart(attendanceCtx, {
             type: 'bar',
-            data: attendanceData,
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Volume',
+                    data: [],
+                    backgroundColor: ['#0f6a43', '#d6a44d', '#c84f4f', '#4b7fd6'],
+                    borderRadius: 12,
+                    borderWidth: 0
+                }]
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 100,
                         title: {
                             display: true,
-                            text: 'Taux de présence (%)'
+                            text: 'Nombre d employes'
                         }
                     },
                     x: {
                         title: {
                             display: true,
-                            text: 'Jours de la semaine'
+                            text: 'Statuts du jour'
                         }
                     }
                 },
@@ -706,31 +788,8 @@ function initAdditionalCharts() {
                 }
             }
         });
-
-        // Ajouter les commentaires
-        const commentsContainer = document.getElementById('attendanceComments');
-        if (commentsContainer) {
-            commentsContainer.innerHTML = attendanceComments.map(item => `
-                <li class="flex items-center gap-2">
-                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${item.color};"></span>
-                    <span><strong>${item.day}:</strong> ${item.comment}</span>
-                </li>
-            `).join('');
-        }
     }
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-    const dropdownBtns = document.querySelectorAll(".dropdown-btn");
-  
-    dropdownBtns.forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault(); // Empêche le comportement par défaut du lien
-        const submenu = btn.nextElementSibling;
-        submenu.style.display = (submenu.style.display === "block") ? "none" : "block";
-      });
-    });
-});
 
 // ===== DRAG AND DROP =====
 const DragDrop = {
@@ -759,6 +818,8 @@ document.addEventListener('DOMContentLoaded', () => {
         initLoginPage();
     } else if (document.getElementById('dashboardContainer')) {
         Dashboard.init();
+    } else {
+        initSidebarNavigation();
     }
 
     // Initialiser le drag and drop si nécessaire
@@ -768,88 +829,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelectorAll('.task').forEach(task => {
         task.addEventListener('dragstart', DragDrop.drag);
-    });
-});
-
-document.addEventListener("DOMContentLoaded", function() {
-    const sidebar = document.getElementById('sidebar');
-    const currentPage = window.location.pathname.split("/").pop();
-    
-    // Gestion du clic sur le menu Attendance
-    document.querySelector('.dropdown-btn')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        if (sidebar.classList.contains('collapsed')) {
-            // Si sidebar fermée, rediriger vers attendance.html
-            window.location.href = 'attendance.html';
-        } else {
-            // Si sidebar ouverte, toggle le submenu
-            const submenu = this.nextElementSibling;
-            submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
-        }
-    });
-
-    // Gestion de la sélection active
-    document.querySelectorAll('.menu li').forEach(li => {
-        const link = li.querySelector('a');
-        if (link) {
-            const href = link.getAttribute('href');
-            
-            // Si on est dans une page enfant
-            if (currentPage === 'attendance.html' || currentPage === 'empAtt.html') {
-                if (href === 'attendance.html') {
-                    li.classList.add('active-parent');
-                }
-                if (href === currentPage) {
-                    li.classList.add('active');
-                }
-            }
-        }
-    });
-});
-
-// Gestion des menus et submenus
-document.addEventListener("DOMContentLoaded", () => {
-    const currentPage = window.location.pathname.split("/").pop();
-    const sidebar = document.getElementById('sidebar');
-
-    // Gestion de la sélection active
-    document.querySelectorAll('.menu li').forEach(li => {
-        const link = li.querySelector('a');
-        if (link) {
-            const href = link.getAttribute('href');
-            const isActive = href === currentPage;
-            
-            // Gestion des sous-menus
-            if (li.classList.contains('dropdown')) {
-                const submenu = li.querySelector('.submenu');
-                const hasActiveChild = [...submenu.querySelectorAll('a')]
-                    .some(a => a.href === window.location.href);
-
-                // Ouvrir le submenu si on est sur une page enfant
-                if (hasActiveChild && !sidebar.classList.contains('collapsed')) {
-                    submenu.style.display = 'block';
-                    li.classList.add('active-parent');
-                }
-            }
-
-            // Appliquer la classe active
-            li.classList.toggle('active', isActive);
-        }
-    });
-
-    // Gestion du clic sur les dropdowns
-    document.querySelectorAll('.dropdown-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const submenu = this.nextElementSibling;
-            
-            if (sidebar.classList.contains('collapsed')) {
-                window.location.href = this.href;
-            } else {
-                submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
-            }
-        });
     });
 });
 
@@ -886,34 +865,34 @@ async function fetchEmployeeStats() {
         const todayAttendance = document.getElementById('todayAttendance');
         const absentCount = document.getElementById('absentCount');
         const activeEmployees = document.getElementById('activeEmployees');
+        const activeEmployeesTrend = document.getElementById('activeEmployeesTrend');
+        const todayAttendanceTrend = document.getElementById('todayAttendanceTrend');
+        const absentCountTrend = document.getElementById('absentCountTrend');
 
-        const [statusResponse, totalResponse, attendanceResponse] = await Promise.all([
-            fetch('http://localhost:8080/employes/count-by-statut/all'),
-            fetch('http://localhost:8080/employes/count'),
-            fetch('http://localhost:8080/presences/statuts/today')
+        const [statusStats, totalEmployees, attendanceStats, allEmployees, recentEntries] = await Promise.all([
+            AppApi.get('/employes/count-by-statut/all', 'Impossible de charger les statuts employes.'),
+            AppApi.get('/employes/count', 'Impossible de charger le nombre total d employes.'),
+            AppApi.get('/presences/statuts/today', 'Impossible de charger les statuts de presence du jour.'),
+            AppApi.get('/employes/find/all', 'Impossible de charger les employes.'),
+            AppApi.get('/face-recognition/recent-entries?limit=10', 'Impossible de charger les entrees recentes.')
         ]);
 
-        if (!statusResponse.ok || !totalResponse.ok || !attendanceResponse.ok) {
-            throw new Error('Network response was not ok');
-        }
-
-        const [stats, totalEmployees, attendanceStats] = await Promise.all([
-            statusResponse.json(),
-            totalResponse.json(),
-            attendanceResponse.json()
-        ]);
-
-        const totalActif = stats.find(item => item.statut === 'ACTIF')?.count || 0;
-        const totalEnConge = stats.find(item => item.statut === 'EN_CONGE')?.count || 0;
-        const totalInactif = stats.find(item => item.statut === 'INACTIF')?.count || 0;
+        const totalActif = statusStats.find(item => item.statut === 'ACTIF')?.count || 0;
+        const totalEnConge = statusStats.find(item => item.statut === 'EN_CONGE')?.count || 0;
+        const totalInactif = statusStats.find(item => item.statut === 'INACTIF')?.count || 0;
         const todayPresent = attendanceStats
             .filter(item => ['PRESENT', 'EN_PAUSE', 'TERMINE'].includes(item.statut))
             .reduce((acc, item) => acc + item.count, 0);
         const todayAbsent = attendanceStats.find(item => item.statut === 'ABSENT')?.count || 0;
+        const genderCounts = allEmployees.reduce((acc, employee) => {
+            const key = employee.genre || 'Non precise';
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+        }, {});
+        const hourlyEntries = buildHourlyEntries(recentEntries);
 
         cardsContainer.innerHTML = `
-                
-               <div class="card">
+                <div class="card">
                         <h3>Total des Employes</h3>
                         <p>${totalEmployees}</p>
                     </div>
@@ -930,10 +909,149 @@ async function fetchEmployeeStats() {
         todayAttendance.textContent = `${todayPresent}/${totalEmployees}`;
         absentCount.textContent = `${todayAbsent}`;
         activeEmployees.textContent = `${totalActif}`;
-        return { stats, totalEmployees, attendanceStats };
+
+        if (activeEmployeesTrend) {
+            activeEmployeesTrend.textContent = `${Math.round((totalActif / Math.max(totalEmployees, 1)) * 100)}% du total`;
+            activeEmployeesTrend.className = 'card-trend up';
+        }
+        if (todayAttendanceTrend) {
+            todayAttendanceTrend.textContent = `${Math.round((todayPresent / Math.max(totalEmployees, 1)) * 100)}% presents`; 
+            todayAttendanceTrend.className = 'card-trend neutral';
+        }
+        if (absentCountTrend) {
+            absentCountTrend.textContent = `${Math.round((todayAbsent / Math.max(totalEmployees, 1)) * 100)}% absents`;
+            absentCountTrend.className = todayAbsent > 0 ? 'card-trend down' : 'card-trend up';
+        }
+
+        updateEntriesChart(hourlyEntries);
+        updateGenderChart(genderCounts, totalEmployees);
+        updateAttendanceReport(attendanceStats, totalEmployees);
+        Dashboard.setLoadingState(false);
+
+        return { statusStats, totalEmployees, attendanceStats, allEmployees, recentEntries };
         
     } catch (error) {
         console.error('Error fetching employee stats:', error);
+        Dashboard.setLoadingState(false);
         return null;
+    }
+}
+
+function buildHourlyEntries(entries) {
+    const buckets = new Map();
+    entries.forEach((entry) => {
+        const hour = (entry.heure || '').split(':')[0];
+        if (!hour) {
+            return;
+        }
+        const label = `${hour}h`;
+        buckets.set(label, (buckets.get(label) || 0) + 1);
+    });
+    return Array.from(buckets.entries());
+}
+
+function updateEntriesChart(hourlyEntries) {
+    if (!Dashboard.charts.entries) {
+        return;
+    }
+    Dashboard.charts.entries.data.labels = hourlyEntries.map(([label]) => label);
+    Dashboard.charts.entries.data.datasets[0].data = hourlyEntries.map(([, count]) => count);
+    Dashboard.charts.entries.update();
+    document.getElementById('entriesChart')?.closest('.chart-container')?.classList.add('canvas-ready');
+}
+
+function updateGenderChart(genderCounts, totalEmployees) {
+    if (!Dashboard.charts.gender) {
+        return;
+    }
+
+    const labels = Object.keys(genderCounts);
+    const values = Object.values(genderCounts);
+    Dashboard.charts.gender.data.labels = labels;
+    Dashboard.charts.gender.data.datasets[0].data = values;
+    Dashboard.charts.gender.update();
+    document.getElementById('genderDistributionChart')?.closest('.chart-container')?.classList.add('canvas-ready');
+
+    const genderStatsGrid = document.getElementById('genderStatsGrid');
+    if (genderStatsGrid) {
+        genderStatsGrid.innerHTML = labels.map((label, index) => `
+            <div class="gender-stat-item">
+                <div class="stat-label">
+                    <span class="color-dot" style="background-color: ${Dashboard.charts.gender.data.datasets[0].backgroundColor[index % Dashboard.charts.gender.data.datasets[0].backgroundColor.length]};"></span>
+                    <span>${label}</span>
+                </div>
+                <div class="stat-value">${values[index]} (${Math.round((values[index] / Math.max(totalEmployees, 1)) * 100)}%)</div>
+            </div>
+        `).join('');
+    }
+
+    const femaleTotal = labels.filter((label) => /femme/i.test(label)).reduce((acc, label) => acc + (genderCounts[label] || 0), 0);
+    const maleTotal = labels.filter((label) => /homme/i.test(label)).reduce((acc, label) => acc + (genderCounts[label] || 0), 0);
+    const unknownTotal = totalEmployees - femaleTotal - maleTotal;
+
+    document.getElementById('femaleSummary').textContent = `${femaleTotal} (${Math.round((femaleTotal / Math.max(totalEmployees, 1)) * 100)}%)`;
+    document.getElementById('maleSummary').textContent = `${maleTotal + unknownTotal} (${Math.round(((maleTotal + unknownTotal) / Math.max(totalEmployees, 1)) * 100)}%)`;
+}
+
+function updateAttendanceReport(attendanceStats, totalEmployees) {
+    if (!Dashboard.charts.attendance) {
+        return;
+    }
+
+    const labels = attendanceStats.map((item) => item.statut);
+    const values = attendanceStats.map((item) => item.count);
+    Dashboard.charts.attendance.data.labels = labels;
+    Dashboard.charts.attendance.data.datasets[0].data = values;
+    Dashboard.charts.attendance.update();
+    document.getElementById('attendanceReportChart')?.closest('.chart-container')?.classList.add('canvas-ready');
+
+    const commentsContainer = document.getElementById('attendanceComments');
+    if (commentsContainer) {
+        commentsContainer.innerHTML = attendanceStats.map((item) => `
+            <li class="flex items-center gap-2">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #0f6a43;"></span>
+                <span><strong>${item.statut}:</strong> ${item.count} employes (${Math.round((item.count / Math.max(totalEmployees, 1)) * 100)}%)</span>
+            </li>
+        `).join('');
+    }
+}
+
+async function fetchRecentEntries(activityList) {
+    const entriesTableBody = document.querySelector('#recentEntriesTable tbody');
+
+    try {
+        const entries = await AppApi.get('/face-recognition/recent-entries?limit=5', 'Impossible de charger les entrees recentes.');
+
+        if (entriesTableBody) {
+            entriesTableBody.innerHTML = entries.map((entry) => `
+                <tr>
+                    <td>
+                        <div class="employee-cell">
+                            <img src="${entry.employeePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(entry.employeeName || 'Employe')}`}" alt="${entry.employeeName || 'Employe'}" class="employee-photo">
+                            <span>${entry.employeeName || 'Employe'}</span>
+                        </div>
+                    </td>
+                    <td>${(entry.heure || '').slice(0, 5) || '--:--'}</td>
+                    <td>${entry.portail || 'Porte Principale'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="3">Aucune entree recente.</td></tr>';
+        }
+
+        if (activityList) {
+            activityList.innerHTML = entries.map((entry) => `
+                <li>
+                    <i class="fas fa-door-open activity-icon"></i>
+                    <span>${entry.employeeName || 'Employe'} a ete reconnu a ${(entry.heure || '').slice(0, 5) || '--:--'} via ${entry.portail || 'Porte Principale'}</span>
+                    <span class="activity-time">${entry.date || ''}</span>
+                </li>
+            `).join('') || '<li><span>Aucune activite recente disponible.</span></li>';
+        }
+    } catch (error) {
+        if (entriesTableBody) {
+            entriesTableBody.innerHTML = '<tr><td colspan="3">Impossible de charger les entrees recentes.</td></tr>';
+        }
+        if (activityList) {
+            activityList.innerHTML = '<li><span>Impossible de charger l activite recente.</span></li>';
+        }
     }
 }
