@@ -1,4 +1,8 @@
-<h1 align="center">CASE Attendance</h1>
+<p align="center">
+  <img src="assets/readme-face-recognition-hero.svg" alt="Face Recognition hero banner" width="100%">
+</p>
+
+<h1 align="center">FACE RECOGNITION</h1>
 
 <p align="center">
   <strong>An attendance supervision platform built for real-time HR operations and face recognition workflows.</strong>
